@@ -6,9 +6,10 @@ from pygame.locals import *
 #import random
 import math
 #import colorsys
-#from PIL import Image
+from PIL import Image
 import numpy
 import glob
+from operator import mul, add
 
 
 main_dir = os.path.split(os.path.abspath(__file__))[0]
@@ -51,11 +52,14 @@ def save_image(surface, filename):
     pygame.image.save(surface, fullpath)
 
 def surf_grey(surface):
-    arr = pygame.surfarray.array3d(surface)
-    #luminosity filter
-    avgs = [[(r*0.298 + g*0.587 + b*0.114) for (r,g,b) in col] for col in arr]
-    arr = numpy.array([[[avg,avg,avg] for avg in col] for col in avgs])
-    return pygame.surfarray.make_surface(arr)
+    rect = surface.get_rect()
+    image_string = pygame.image.tostring(surface, 'RGB', False)
+    image_pil = Image.fromstring('RGB', rect.size, image_string)
+    image_pil = image_pil.convert('L')
+    image_pil = image_pil.convert('RGB')
+    image_string = image_pil.tostring()
+    surface = pygame.image.fromstring(image_string, rect.size, 'RGB', False)
+    return surface
 
 class Bild(pygame.sprite.Sprite):
     def __init__(self):
@@ -225,7 +229,6 @@ def main():
                 print 'R', bild.rot90, 'H', bild.hFlip, 'V', bild.vFlip
             elif event.type == KEYDOWN and event.key == K_g:
                 bild.toggle('grey')
-                print "tog g"
             elif event.type == KEYDOWN and event.key == K_f:
                 if fullscreen:
                     pygame.display.set_mode((640,480))
