@@ -26,6 +26,10 @@ class Bild(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self) #call Sprite initializer
         self.image, self.rect = load_image('test.jpg')
+
+    def update(self):
+
+        self.rect.center = (200,200)
         
 class Bild2(pygame.sprite.Sprite):
     def __init__(self):
@@ -41,15 +45,14 @@ def main():
     screen = pygame.display.set_mode((640, 480), 0, 32)
     
     bild = Bild()
-    bild2 = Bild2()
+    #bild2 = Bild2()
 
-    allsprites = pygame.sprite.Group(bild2) #lägger till spriten 'bild' i gruppen allsprites
+    allsprites = pygame.sprite.Group(bild) #lägger till spriten 'bild' i gruppen allsprites
 
        
-    allsprites.draw(screen)
-    pygame.display.flip()
-    allsprites.draw(screen)
-    pygame.display.flip()    
+    #allsprites.draw(screen)
+    #pygame.display.flip()
+
 
     
 
