@@ -1,13 +1,13 @@
 ﻿# coding: utf-8
 import os, pygame
 import sys
-import time
+#import time
 from pygame.locals import *
-import random
+#import random
 import math
-import colorsys
-from PIL import Image
-import numpy
+#import colorsys
+#from PIL import Image
+#import numpy
 
 main_dir = os.path.split(os.path.abspath(__file__))[0]
 data_dir = os.path.join(main_dir, 'data')
@@ -30,7 +30,7 @@ class Bild(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self) #call Sprite initializer
         #load file
-        self.filename = 'stor.tif'
+        self.filename = 'test.jpg'
         self.original = load_image(self.filename)
         #create toggles
         self.rot90 = False
@@ -86,8 +86,8 @@ class Bild(pygame.sprite.Sprite):
         self.Lcrop = self.Lrect.copy()
         self.Rcrop = self.Rrect.copy()
         #center images vertical
-        self.Lrect.centery = self.disprect.height / 2
-        self.Rrect.centery = self.disprect.height / 2     
+        #self.Lrect.centery = self.disprect.height / 2
+        #self.Rrect.centery = self.disprect.height / 2     
 
     def rotate(self):
         if self.rot90:
@@ -99,7 +99,6 @@ class Bild(pygame.sprite.Sprite):
             self.Rimage = pygame.transform.flip(self.image, True, False)
             self.update_rects()
 
-
     def flip(self, direction):
         if direction == 'hFlip':
             self.Limage = pygame.transform.flip(self.Limage, True, False)
@@ -107,10 +106,6 @@ class Bild(pygame.sprite.Sprite):
         if direction == 'vFlip':
             self.Limage = pygame.transform.flip(self.Limage, False, True)
             self.Rimage = pygame.transform.flip(self.Rimage, False, True)
-
-
-
-
 
     def update(self):
         mouse = pygame.mouse.get_pos()
@@ -134,13 +129,17 @@ class Bild(pygame.sprite.Sprite):
             self.flipString = 'vFlip'
         else:
             self.flipString = ''
+            
 def main():
 
     pygame.init()
     screen = pygame.display.set_mode((640, 480), 0)
+
+
     fullscreen = False
     
     bild = Bild()
+
 
     #mainloop
     going=True
@@ -156,7 +155,7 @@ def main():
                 print pygame.mouse.get_pos()
                 print bild.croppos
             elif event.type == KEYDOWN and event.key == K_p:
-                save_image(screen, bild.filename + ' ' + str(bild.croppos) + ' ' + bild.mirrorString + ' ' + bild.rotateString + ' ' + bild.rotateString + '.png')
+                save_image(imagearea, bild.filename + ' ' + str(bild.croppos) + ' ' + bild.mirrorString + ' ' + bild.rotateString + ' ' + bild.rotateString + '.png')
             elif event.type == KEYDOWN and event.key == K_q:
                 bild.toggle('rot90')
                 print 'R', bild.rot90, 'H', bild.hFlip, 'V', bild.vFlip
@@ -177,9 +176,16 @@ def main():
                     bild.resize()
 
         bild.update()
-        screen.fill ((50, 0, 0))
-        screen.blit(bild.Limage, bild.Lrect, bild.Lcrop)
-        screen.blit(bild.Rimage, bild.Rrect, bild.Rcrop)
+
+        imagearea = pygame.Surface((bild.Lrect.width*2, bild.Lrect.height), 0, screen)
+        imageareaRect = imagearea.get_rect()
+        imageareaRect.centery = pygame.display.Info().current_h / 2
+        
+        screen.fill ((100, 100, 100))
+        imagearea.fill ((100, 100, 100))
+        imagearea.blit(bild.Limage, bild.Lrect, bild.Lcrop)
+        imagearea.blit(bild.Rimage, bild.Rrect, bild.Rcrop)
+        screen.blit(imagearea, imageareaRect)
         pygame.display.flip()
 
 if __name__ == '__main__':
