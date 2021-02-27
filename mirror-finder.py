@@ -4,7 +4,7 @@ import sys
 import time
 from pygame.locals import *
 import random
-from math import *
+import math
 import colorsys
 from PIL import Image
 import numpy
@@ -36,13 +36,12 @@ class Bild(pygame.sprite.Sprite):
 
     def update(self):
         mouse = pygame.mouse.get_pos()
-        self.crop.width = mouse[0]
-        self.mirrorcrop.width = mouse[0]
-        self.mirrorcrop.left = 300-mouse[0]
-        self.mirrorrect.left = mouse[0]
-
-
-
+        crop = min(mouse[0], self.rect.width)
+        
+        self.crop.width = crop
+        self.mirrorrect.left = crop
+        self.mirrorcrop.width = crop
+        self.mirrorcrop.left = self.rect.width-crop
         
 
 
@@ -83,8 +82,7 @@ def main():
                 going = False
             elif event.type == KEYDOWN and event.key == K_m:
                 print pygame.mouse.get_pos()
-            elif event.type == KEYDOWN:
-                going = False                #plot.setLevel(int(event.unicode))
+            
     
         allsprites.update()
         screen.fill ((50, 0, 0))
