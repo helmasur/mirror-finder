@@ -7,7 +7,7 @@ from pygame.locals import *
 import math
 #import colorsys
 #from PIL import Image
-#import numpy
+import numpy
 import glob
 
 
@@ -50,6 +50,13 @@ def save_image(surface, filename):
     fullpath = os.path.join(data_dir, filename)
     pygame.image.save(surface, fullpath)
 
+def surf_grey(surface):
+    arr = pygame.surfarray.array3d(surface)
+    #luminosity filter
+    avgs = [[(r*0.298 + g*0.587 + b*0.114) for (r,g,b) in col] for col in arr]
+    arr = numpy.array([[[avg,avg,avg] for avg in col] for col in avgs])
+    return pygame.surfarray.make_surface(arr)
+
 class Bild(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self) #call Sprite initializer
@@ -63,6 +70,7 @@ class Bild(pygame.sprite.Sprite):
         self.mirrorString = 'Rmirror'
         self.vFlip = False
         self.flipString = '0flip'
+        self.isGrey = False
 
         self.resize()
 
@@ -90,6 +98,11 @@ class Bild(pygame.sprite.Sprite):
         self.imageRot = pygame.Surface((width,height),0,self.original)
         pygame.transform.scale(self.original, (width, height), self.imageRot)
         self.imageRot = pygame.transform.rotate(self.imageRot, 270)
+        #make greyscale versions
+        self.imageRGB = self.image.copy()
+        self.imageRotRGB = self.imageRot.copy()
+        self.imageGrey = surf_grey(self.image)
+        self.imageRotGrey = surf_grey(self.imageRot)
         #set image rotation
         self.rotate()
         self.update_rects()
@@ -106,6 +119,12 @@ class Bild(pygame.sprite.Sprite):
         elif item == 'vFlip':
             self.vFlip = self.vFlip == False            #ändra boolvärdet
             self.flip(item)
+        elif item == 'grey':
+            self.isGrey = self.isGrey == False            #ändra boolvärdet
+            self.greyscale()
+            self.rotate()
+            if self.vFlip: self.flip('vFlip')
+            if self.hFlip: self.flip('hFlip')
 
     def update_rects(self):
         #get rects
@@ -116,6 +135,14 @@ class Bild(pygame.sprite.Sprite):
         #center images vertical
         #self.Lrect.centery = self.disprect.height / 2
         #self.Rrect.centery = self.disprect.height / 2     
+
+    def greyscale(self):
+        if self.isGrey:
+            self.image = self.imageGrey
+            self.imageRot = self.imageRotGrey
+        else:
+            self.image = self.imageRGB
+            self.imageRot = self.imageRotRGB
 
     def rotate(self):
         if self.rot90:
@@ -196,6 +223,9 @@ def main():
             elif event.type == KEYDOWN and event.key == K_e:
                 bild.toggle('vFlip')
                 print 'R', bild.rot90, 'H', bild.hFlip, 'V', bild.vFlip
+            elif event.type == KEYDOWN and event.key == K_g:
+                bild.toggle('grey')
+                print "tog g"
             elif event.type == KEYDOWN and event.key == K_f:
                 if fullscreen:
                     pygame.display.set_mode((640,480))
@@ -216,8 +246,8 @@ def main():
         imageareaRect = imagearea.get_rect()
         imageareaRect.centery = pygame.display.Info().current_h / 2
         
-        screen.fill ((100, 100, 100))
-        imagearea.fill ((100, 100, 100))
+        screen.fill ((50, 0, 0))
+        imagearea.fill ((50, 0, 0))
         imagearea.blit(bild.Limage, bild.Lrect, bild.Lcrop)
         imagearea.blit(bild.Rimage, bild.Rrect, bild.Rcrop)
         screen.blit(imagearea, imageareaRect)
