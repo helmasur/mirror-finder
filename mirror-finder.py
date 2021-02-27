@@ -20,12 +20,14 @@ def load_image(filename):
         print ('Cannot load image:', fullpath)
         raise SystemExit(str(geterror()))
     image = image.convert()
-    return image, image.get_rect()
+    return image
 
 class Bild(pygame.sprite.Sprite):
     def __init__(self, dispsurf):
         pygame.sprite.Sprite.__init__(self) #call Sprite initializer
-        self.image, self.rect = load_image('test.jpg')
+        self.original = load_image('stor.tif')
+        self.image = self.original.copy()
+        self.rect = self.image.get_rect()
         self.disprect = dispsurf.get_rect()
         scale = min(1.0 * self.disprect.height / self.rect.height, 1.0 * self.disprect.width/2.0 / self.rect.width)
         width = int(scale * self.rect.width)
@@ -59,6 +61,18 @@ class Bild(pygame.sprite.Sprite):
         self.Lrect.centery = self.disprect.height / 2
         self.Rrect.centery = self.disprect.height / 2
 
+    def rotate(self, angle):
+        self.image = pygame.transform.rotate(self.original, angle)
+        self.rect = self.image.get_rect()
+
+    def flip(self, isHorizontal):
+        if isHorizontal:
+            self.Limage = pygame.transform.flip(self.Limage, True, False)
+            self.Rimage = pygame.transform.flip(self.Rimage, True, False)
+        else:
+            self.Limage = pygame.transform.flip(self.Limage, False, True)
+            self.Rimage = pygame.transform.flip(self.Rimage, False, True)
+
     def update(self):
         mouse = pygame.mouse.get_pos()
         crop = min(mouse[0]/2, self.Lrect.width)
@@ -67,12 +81,7 @@ class Bild(pygame.sprite.Sprite):
         self.Rrect.left = self.disprect.centerx
         self.Lcrop.width = crop
         self.Rcrop.width = crop
-        #self.Lcrop.left = 0
         self.Rcrop.left = self.Rrect.width - crop
-        
-
-        #self.Rcrop.left = self.Lrect.width-crop
-
 
 def main():
 
@@ -81,7 +90,6 @@ def main():
     fullscreen = False
     
     bild = Bild(screen)
-    #allsprites = pygame.sprite.Group(bild) #lägger till spriten 'bild' i gruppen allsprites
 
     #mainloop
     going=True
@@ -93,6 +101,22 @@ def main():
                 going = False
             elif event.type == KEYDOWN and event.key == K_ESCAPE:
                 going = False
+            elif event.type == KEYDOWN and event.key == K_1:
+                bild.rotate(0)
+                bild.resize(screen)
+            elif event.type == KEYDOWN and event.key == K_2:
+                bild.rotate(90)
+                bild.resize(screen)
+            elif event.type == KEYDOWN and event.key == K_3:
+                bild.rotate(180)
+                bild.resize(screen)
+            elif event.type == KEYDOWN and event.key == K_4:
+                bild.rotate(270)
+                bild.resize(screen)
+            elif event.type == KEYDOWN and event.key == K_q:
+                bild.flip(True)
+            elif event.type == KEYDOWN and event.key == K_w:
+                bild.flip(False)
             elif event.type == KEYDOWN and event.key == K_f:
                 if fullscreen:
                     fullscreen = False
@@ -103,7 +127,6 @@ def main():
                     pygame.display.set_mode((1680,1050), pygame.FULLSCREEN)
                     bild.resize(screen)
 
-        #allsprites.update()
         bild.update()
         screen.fill ((50, 0, 0))
         screen.blit(bild.Limage, bild.Lrect, bild.Lcrop)
