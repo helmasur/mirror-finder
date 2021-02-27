@@ -61,11 +61,18 @@ class Bild(pygame.sprite.Sprite):
 
     def update(self):
         mouse = pygame.mouse.get_pos()
-        crop = min(mouse[0], self.Lrect.width)
+        crop = min(mouse[0]/2, self.Lrect.width)
+
+        self.Lrect.left = self.disprect.centerx - crop
+        self.Rrect.left = self.disprect.centerx
         self.Lcrop.width = crop
-        self.Rrect.left = crop
         self.Rcrop.width = crop
-        self.Rcrop.left = self.Lrect.width-crop
+        #self.Lcrop.left = 0
+        self.Rcrop.left = self.Rrect.width - crop
+        
+
+        #self.Rcrop.left = self.Lrect.width-crop
+
 
 def main():
 
@@ -74,7 +81,7 @@ def main():
     fullscreen = False
     
     bild = Bild(screen)
-    allsprites = pygame.sprite.Group(bild) #lägger till spriten 'bild' i gruppen allsprites
+    #allsprites = pygame.sprite.Group(bild) #lägger till spriten 'bild' i gruppen allsprites
 
     #mainloop
     going=True
@@ -96,7 +103,8 @@ def main():
                     pygame.display.set_mode((1680,1050), pygame.FULLSCREEN)
                     bild.resize(screen)
 
-        allsprites.update()
+        #allsprites.update()
+        bild.update()
         screen.fill ((50, 0, 0))
         screen.blit(bild.Limage, bild.Lrect, bild.Lcrop)
         screen.blit(bild.Rimage, bild.Rrect, bild.Rcrop)
