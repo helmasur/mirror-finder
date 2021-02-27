@@ -21,8 +21,8 @@ from smc.freeimage import Image as smcImage
 
 main_dir = os.path.split(os.path.abspath(__file__))[0]
 data_dir = os.path.join(main_dir, 'data')
-img_dir = "d:/_gruvan_sat/jpg"
-out_dir = "d:/_gruvan_out"
+img_dir = "d:/_berg1saturize"
+out_dir = "d:/_berg1mirrors"
 #out_dir = "out"
 files = glob.glob(os.path.join(img_dir, '*.jpg'))
 current_file = -1
@@ -336,7 +336,7 @@ def main():
 
     fullwidth = pygame.display.Info().current_w
     fullheight = pygame.display.Info().current_h
-    screen = pygame.display.set_mode((1024, 768), 0)
+    screen = pygame.display.set_mode((840, 900), 0)
     screen_rect = screen.get_rect()
 
     fullscreen = False
@@ -430,8 +430,6 @@ def main():
         imagearea = pygame.Surface((pygame.display.Info().current_w, bild.Lrect.height), 0, screen)
         imageareaRect = imagearea.get_rect()
         imageareaRect.centery = pygame.display.Info().current_h / 2
-
-
         
         screen.fill ((50, 0, 0))
         imagearea.fill ((50, 0, 0))
@@ -495,10 +493,8 @@ def main():
         
         if show_status:
             screen.blit(stat_text, (0,screen_rect.height-29))
-            
 
-
-        pygame.display.flip()
+        pygame.display.update()
 
 if __name__ == '__main__':
     main()
