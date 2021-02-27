@@ -117,126 +117,125 @@ def smc_to_surface(image):
 class Bild(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self) #call Sprite initializer
-        #load file
-        self.load('first')
-        #create toggles
-        self.rot90 = False
-        self.rotateString = '0deg'
-        self.hFlip = False
-        self.mirrorString = 'Rmirror'
-        self.vFlip = False
-        self.flipString = '0flip'
-        self.isGrey = False
-        self.fit_height = False
-
-        self.resize()
+        
+        self.load('first')  #load file
 
         self.croppos = 0    #position of the mirror
         
-
-    # def load_next(self, isNext):
-    #     self.rot90 = False
-    #     self.hFlip = False
-    #     self.vFlip = False
-    #     self.isGrey = False
-    #     self.fit_height = False
-    #     global statusString
-    #     statusString = ''
-    #     self.original = load_next_image(isNext)
-    #     self.resize()
-
-    # def load_image(self, number):
-    #     self.rot90 = False
-    #     self.hFlip = False
-    #     self.vFlip = False
-    #     self.isGrey = False
-    #     self.fit_height = False
-    #     global statusString
-    #     statusString = ''
-    #     self.original = load_image(number)
-    #     self.resize()
-
     def load(self, position):
         self.rot90 = False
         self.hFlip = False
         self.vFlip = False
-        self.isGrey = False
-        self.fit_height = False
+        self.fitHeightOnly = False
+        self.totalRotation = 0
+        self.rotationAdjustment = 0        
         global statusString
         statusString = ''
         self.original = smcImage(get_file_path(position))
         self.original = smc_to_surface(self.original)
-        self.resize()
+        self.adaptToView()
 
-    def resize(self):   #create images fitting the current resolution
+    def adaptToView(self):
+        self.createFittingImages()
+        self.Limage = self.imageForView
+        self.Rimage = pygame.transform.flip(self.Limage, True, False)
+        self.update_rects()
+        
+    def createFittingImages(self):
         self.dispsurf = pygame.display.get_surface()
         self.disprect = self.dispsurf.get_rect()
-        #rectOriginal = self.original.get_rect()
         original_width = self.original.get_rect().width
         original_height = self.original.get_rect().height
+        #---get fitting factors for all cases
+        #fit view
+        self.scaleView = min(1.0 * self.disprect.height / original_height, 1.0 * self.disprect.width/2.0 / original_width)
+        self.scaleViewRotated = min(1.0 * self.disprect.height / original_width, 1.0 * self.disprect.width/2.0 / original_height)        
+        #fit height only
+        self.scaleHeight = 1.0 * self.disprect.height / original_height
+        self.scaleHeightRotated = 1.0 * self.disprect.height / original_width
+        #---make images for all cases
+        #fit view
+        width = int(self.scaleView * original_width)
+        height = int(self.scaleView * original_height)
+        self.imageForView = pygame.Surface((width,height),HWSURFACE,self.original)
+        pygame.transform.smoothscale(self.original, (width, height), self.imageForView)
+        #fit height only
+        width = int(self.scaleHeight * original_width)
+        height = int(self.scaleHeight * original_height)
+        self.imageForHeight = pygame.Surface((width,height),HWSURFACE,self.original)
+        pygame.transform.smoothscale(self.original, (width, height), self.imageForHeight)
+        #rotated fit view
+        width = int(self.scaleViewRotated * original_width)
+        height = int(self.scaleViewRotated * original_height)
+        self.imageForViewRotated = pygame.Surface((width,height),HWSURFACE,self.original)
+        pygame.transform.smoothscale(self.original, (width, height), self.imageForViewRotated)
+        self.imageForViewRotated = pygame.transform.rotate(self.imageForViewRotated, 270)
+        #rotated fit height only
+        width = int(self.scaleHeightRotated * original_width)
+        height = int(self.scaleHeightRotated * original_height)
+        self.imageForHeightRotated = pygame.Surface((width,height),HWSURFACE,self.original)
+        pygame.transform.smoothscale(self.original, (width, height), self.imageForHeightRotated)
+        self.imageForHeightRotated = pygame.transform.rotate(self.imageForViewRotated, 270)
 
 
-        #---get fitting factors for both cases of rotation
-        if self.fit_height:
-            self.normScale = 1.0 * self.disprect.height / original_height
-            self.rotScale = 1.0 * self.disprect.height / original_width
-        else:
-            self.normScale = min(1.0 * self.disprect.height / original_height, 1.0 * self.disprect.width/2.0 / original_width)
-            self.rotScale = min(1.0 * self.disprect.height / original_width, 1.0 * self.disprect.width/2.0 / original_height)
+
+
+    def resize(self):   #create images fitting the current resolution
+        
+        #rectOriginal = self.original.get_rect()
+        
+
+
+        
         #---scale non rotated
-        width = int(self.normScale * original_width)
-        height = int(self.normScale * original_height)
-        self.image = pygame.Surface((width,height),HWSURFACE,self.original)
-        pygame.transform.smoothscale(self.original, (width, height), self.image)
+        
         #image = self.original.resize(width, height)
         #---scale and rotate
-        width = int(self.rotScale * original_width)
-        height = int(self.rotScale * original_height)
-        self.image_rot = pygame.Surface((width,height),HWSURFACE,self.original)
-        pygame.transform.smoothscale(self.original, (width, height), self.image_rot)
-        #image_rot = self.original.resize(width, height)
-        self.image_rot = pygame.transform.rotate(self.image_rot, 270)
+
         #image_rot = image_rot.rotate(90)
-        #make greyscale versions
-        self.image_rgb = self.image.copy()
-        self.image_rot_rgb = self.image_rot.copy()
-        self.image_grey = surf_grey(self.image)
-        self.image_rot_grey = surf_grey(self.image_rot)
-        #image_grey = image.greyscale()
-        #image_rot_grey = image_rot.greyscale()
         #--- make surfaces out of smc images
         #self.image_rgb = smc_to_surface(image)
         #self.image_rot_rgb = smc_to_surface(image_rot)
         #self.image_grey = smc_to_surface(image_grey)
         #self.image_rot_grey = smc_to_surface(image_rot_grey)
         #---set image rotation and colormode
-        self.greyscale()
+        print "INTO RESIZE"
         self.rotate()
         if self.vFlip: self.flip('vFlip')
         if self.hFlip: self.flip('hFlip')
         self.update_rects()
 
+    
+
+
     def toggle(self, item):
+        if item == 'rot1+':
+            self.rotationAdjustment += 1
+            self.totalRotation += 1
+            self.resize()
+        if item == 'rot1-':
+            self.rotationAdjustment -= 1
+            self.totalRotation -= 1
+            self.resize()
         if item == 'rot90':
             self.rot90 = self.rot90 == False            #ändra boolvärdet
+            if self.rot90: self.totalRotation = self.rotationAdjustment + 90
+            else: self.totalRotation = self.rotationAdjustment
             self.rotate()
             if self.vFlip: self.flip('vFlip')
             if self.hFlip: self.flip('hFlip')
+            
         elif item == 'hFlip':
             self.hFlip = self.hFlip == False            #ändra boolvärdet
             self.flip(item)
         elif item == 'vFlip':
             self.vFlip = self.vFlip == False            #ändra boolvärdet
             self.flip(item)
-        elif item == 'grey':
-            self.isGrey = self.isGrey == False            #ändra boolvärdet
-            self.greyscale()
-            self.rotate()
-            if self.vFlip: self.flip('vFlip')
-            if self.hFlip: self.flip('hFlip')
         elif item == 'fit':
-            self.fit_height = self.fit_height == False
+            self.fitHeightOnly = self.fitHeightOnly == False
             self.resize()
+        self.Rimage = pygame.transform.flip(self.Limage, True, False)
+        self.update_rects()
 
     def update_rects(self):
         #get rects
@@ -244,35 +243,20 @@ class Bild(pygame.sprite.Sprite):
         self.Rrect = self.Rimage.get_rect()
         self.Lcrop = self.Lrect.copy()
         self.Rcrop = self.Rrect.copy()
-        #center images vertical
-        #self.Lrect.centery = self.disprect.height / 2
-        #self.Rrect.centery = self.disprect.height / 2     
-
-    def greyscale(self):
-        if self.isGrey:
-            self.image = self.image_grey
-            self.image_rot = self.image_rot_grey
-        else:
-            self.image = self.image_rgb
-            self.image_rot = self.image_rot_rgb
 
     def rotate(self):
         if self.rot90:
-            self.Limage = self.image_rot
-            self.Rimage = pygame.transform.flip(self.image_rot, True, False)
-            self.update_rects()
-        else:
-            self.Limage = self.image
-            self.Rimage = pygame.transform.flip(self.image, True, False)
-            self.update_rects()
+            if self.fitHeightOnly: self.Limage = self.imageForHeightRotated
+            else: self.Limage = self.imageForViewRotated
+        else: #not rotated
+            if self.fitHeightOnly: self.Limage = self.imageForHeight
+            else: self.Limage = self.imageForView
 
     def flip(self, direction):
         if direction == 'hFlip':
             self.Limage = pygame.transform.flip(self.Limage, True, False)
-            self.Rimage = pygame.transform.flip(self.Rimage, True, False)
         if direction == 'vFlip':
             self.Limage = pygame.transform.flip(self.Limage, False, True)
-            self.Rimage = pygame.transform.flip(self.Rimage, False, True)
 
     def update(self):
         mouse = pygame.mouse.get_pos()
@@ -302,10 +286,6 @@ class Bild(pygame.sprite.Sprite):
             self.flipString = '_Fv'
         else:
             self.flipString = ''
-        if self.isGrey == True:
-            self.greyString = '_G'
-        else:
-            self.greyString = ''
 
     def smc_save(self):
         global statusString
@@ -372,6 +352,10 @@ def main():
                 bild.toggle('rot90')
             elif event.type == MOUSEBUTTONDOWN and event.button == 5:
                 bild.toggle('rot90')
+            elif event.type == KEYDOWN and event.key == K_UP:
+                bild.toggle('rot1+')
+            elif event.type == KEYDOWN and event.key == K_DOWN:
+                bild.toggle('rot1-')
             elif event.type == KEYDOWN and event.key == K_w:
                 bild.toggle('hFlip')
             elif event.type == MOUSEBUTTONDOWN and event.button == 1:
@@ -380,19 +364,17 @@ def main():
                 bild.toggle('vFlip')
             elif event.type == MOUSEBUTTONDOWN and event.button == 3:
                 bild.toggle('vFlip')
-            elif event.type == KEYDOWN and event.key == K_r:
-                bild.toggle('grey')
             elif event.type == KEYDOWN and event.key == K_f:
                 if fullscreen:
                     screen = pygame.display.set_mode((1024,768))
                     fullscreen = False
                     screen_rect = screen.get_rect()
-                    bild.resize()
+                    bild.adaptToView()
                 else:
                     screen = pygame.display.set_mode((fullwidth,fullheight), pygame.FULLSCREEN|pygame.HWSURFACE|pygame.DOUBLEBUF)
                     fullscreen = True
                     screen_rect = screen.get_rect()
-                    bild.resize()
+                    bild.adaptToView()
             elif event.type == KEYDOWN and event.key == K_RIGHT:
                 bild.load('next')
             elif event.type == MOUSEBUTTONDOWN and event.button == 2:
@@ -448,8 +430,6 @@ def main():
         else: hflip_text = font.render('Flip H', False, (128,128,128))
         if bild.vFlip: vflip_text = font.render('Flip V', False, (0,255,0))
         else: vflip_text = font.render('Flip V', False, (128,128,128))
-        if bild.isGrey: grey_text = font.render('Greyscale', False, (0,255,0))
-        else: grey_text = font.render('Greyscale', False, (128,128,128))
 
         keyrot_text = font.render('Q, Wheel down: Rotate 90', False, (128,128,128))
         keyfliph_text = font.render('W, Mouse L: Flip H', False, (128,128,128))
@@ -468,13 +448,14 @@ def main():
         file_text = font.render(files[current_file], False, (128,128,128))
         pos_text = font.render('Pos: '+ str(int(bild.mouse_pos_ratio*10000)/100.0)+'...%', False, (128,128,128))
         pos_text_rect = pos_text.get_rect()
+        rotation_text = font.render('Rot: '+str(bild.totalRotation), False, (128,128,128))
+        rotation_text_rect = rotation_text.get_rect()
 
         #render texts (8px spacing / letter)
         if show_info:
             screen.blit(rot_text, (0,0))
             screen.blit(hflip_text, (120,0))
             screen.blit(vflip_text, (210,0))
-            screen.blit(grey_text, (300,0))
 
             textpos2 = screen_rect.width-200
             screen.blit(keyrot_text, (textpos2-96,0))
@@ -491,6 +472,7 @@ def main():
             screen.blit(prevstate_text, (textpos2,154))
             
             screen.blit(file_text, (0,screen_rect.height-15))
+            screen.blit(rotation_text, (screen_rect.width-pos_text_rect.width-rotation_text_rect.width-16,screen_rect.height-15))
             screen.blit(pos_text, (screen_rect.width-pos_text_rect.width ,screen_rect.height-15))
 
             screen.blit(stat_text, (0,screen_rect.height-29))
