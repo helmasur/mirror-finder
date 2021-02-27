@@ -159,83 +159,65 @@ class Bild(pygame.sprite.Sprite):
         height = int(self.scaleView * original_height)
         self.imageForView = pygame.Surface((width,height),HWSURFACE,self.original)
         pygame.transform.smoothscale(self.original, (width, height), self.imageForView)
+        self.imageForView = pygame.Surface.convert_alpha(self.imageForView)
         #fit height only
         width = int(self.scaleHeight * original_width)
         height = int(self.scaleHeight * original_height)
         self.imageForHeight = pygame.Surface((width,height),HWSURFACE,self.original)
         pygame.transform.smoothscale(self.original, (width, height), self.imageForHeight)
+        self.imageForHeight = pygame.Surface.convert_alpha(self.imageForHeight)
         #rotated fit view
         width = int(self.scaleViewRotated * original_width)
         height = int(self.scaleViewRotated * original_height)
         self.imageForViewRotated = pygame.Surface((width,height),HWSURFACE,self.original)
         pygame.transform.smoothscale(self.original, (width, height), self.imageForViewRotated)
         self.imageForViewRotated = pygame.transform.rotate(self.imageForViewRotated, 270)
+        self.imageForViewRotated = pygame.Surface.convert_alpha(self.imageForViewRotated)
         #rotated fit height only
         width = int(self.scaleHeightRotated * original_width)
         height = int(self.scaleHeightRotated * original_height)
         self.imageForHeightRotated = pygame.Surface((width,height),HWSURFACE,self.original)
         pygame.transform.smoothscale(self.original, (width, height), self.imageForHeightRotated)
-        self.imageForHeightRotated = pygame.transform.rotate(self.imageForViewRotated, 270)
-
-
-
+        self.imageForHeightRotated = pygame.transform.rotate(self.imageForHeightRotated, 270)
+        self.imageForHeightRotated = pygame.Surface.convert_alpha(self.imageForHeightRotated)
 
     def resize(self):   #create images fitting the current resolution
-        
-        #rectOriginal = self.original.get_rect()
-        
-
-
-        
-        #---scale non rotated
-        
-        #image = self.original.resize(width, height)
-        #---scale and rotate
-
-        #image_rot = image_rot.rotate(90)
-        #--- make surfaces out of smc images
-        #self.image_rgb = smc_to_surface(image)
-        #self.image_rot_rgb = smc_to_surface(image_rot)
-        #self.image_grey = smc_to_surface(image_grey)
-        #self.image_rot_grey = smc_to_surface(image_rot_grey)
-        #---set image rotation and colormode
         print "INTO RESIZE"
+
+    def remake(self):
         self.rotate()
-        if self.vFlip: self.flip('vFlip')
-        if self.hFlip: self.flip('hFlip')
+        self.rotateAdjust(self.rotationAdjustment)
+        self.flip()
+        self.Rimage = pygame.transform.flip(self.Limage, True, False)
         self.update_rects()
 
-    
-
-
     def toggle(self, item):
+        if item == 'rot0':
+            self.totalRotation -= self.rotationAdjustment
+            self.rotationAdjustment = 0
         if item == 'rot1+':
             self.rotationAdjustment += 1
             self.totalRotation += 1
-            self.resize()
         if item == 'rot1-':
             self.rotationAdjustment -= 1
             self.totalRotation -= 1
-            self.resize()
+        if item == 'rot5+':
+            self.rotationAdjustment += 5
+            self.totalRotation += 5
+        if item == 'rot5-':
+            self.rotationAdjustment -= 5
+            self.totalRotation -= 5
         if item == 'rot90':
             self.rot90 = self.rot90 == False            #ändra boolvärdet
             if self.rot90: self.totalRotation = self.rotationAdjustment + 90
             else: self.totalRotation = self.rotationAdjustment
-            self.rotate()
-            if self.vFlip: self.flip('vFlip')
-            if self.hFlip: self.flip('hFlip')
-            
         elif item == 'hFlip':
             self.hFlip = self.hFlip == False            #ändra boolvärdet
-            self.flip(item)
         elif item == 'vFlip':
             self.vFlip = self.vFlip == False            #ändra boolvärdet
-            self.flip(item)
         elif item == 'fit':
             self.fitHeightOnly = self.fitHeightOnly == False
-            self.resize()
-        self.Rimage = pygame.transform.flip(self.Limage, True, False)
-        self.update_rects()
+        self.remake()
 
     def update_rects(self):
         #get rects
@@ -252,10 +234,13 @@ class Bild(pygame.sprite.Sprite):
             if self.fitHeightOnly: self.Limage = self.imageForHeight
             else: self.Limage = self.imageForView
 
-    def flip(self, direction):
-        if direction == 'hFlip':
+    def rotateAdjust(self, amount):
+        self.Limage = pygame.transform.rotate(self.Limage, amount)
+
+    def flip(self):
+        if self.hFlip:
             self.Limage = pygame.transform.flip(self.Limage, True, False)
-        if direction == 'vFlip':
+        if self.vFlip:
             self.Limage = pygame.transform.flip(self.Limage, False, True)
 
     def update(self):
@@ -356,6 +341,12 @@ def main():
                 bild.toggle('rot1+')
             elif event.type == KEYDOWN and event.key == K_DOWN:
                 bild.toggle('rot1-')
+            elif event.type == KEYDOWN and event.key == K_PAGEUP:
+                bild.toggle('rot5+')
+            elif event.type == KEYDOWN and event.key == K_PAGEDOWN:
+                bild.toggle('rot5-')
+            elif event.type == KEYDOWN and event.key == K_HOME:
+                bild.toggle('rot0')
             elif event.type == KEYDOWN and event.key == K_w:
                 bild.toggle('hFlip')
             elif event.type == MOUSEBUTTONDOWN and event.button == 1:
