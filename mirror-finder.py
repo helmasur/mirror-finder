@@ -15,6 +15,7 @@ from wand.image import Image as wImage
 
 main_dir = os.path.split(os.path.abspath(__file__))[0]
 data_dir = os.path.join(main_dir, 'data')
+out_dir = os.path.join(main_dir, 'out')
 files = glob.glob(os.path.join(data_dir, '*.tif'))
 fileNr = -1
 
@@ -189,37 +190,44 @@ class Bild(pygame.sprite.Sprite):
         self.Rcrop.left = self.Rrect.width - self.croppos
 
         if self.rot90 == True:
-            self.rotateString = 'R90'
+            self.rotateString = '_90'
         else:
             self.rotateString = ''
         if self.hFlip == True:
-            self.mirrorString = 'fH'
+            self.mirrorString = '_Fh'
         else:
             self.mirrorString = ''
         if self.vFlip == True:
-            self.flipString = 'fV'
+            self.flipString = '_Fv'
         else:
             self.flipString = ''
         if self.isGrey == True:
-            self.greyString = 'G'
+            self.greyString = '_G'
         else:
-            self.flipString = ''
+            self.greyString = ''
 
     def wand_save(self):
+        pos = self.mouse_pos_ratio
         print "Wand saving..."
         wandImage = wImage(filename=files[fileNr])
         if self.isGrey: wandImage.type = 'grayscale'
         if self.rot90: wandImage.rotate(90)
         if self.hFlip: wandImage.flop()
         if self.vFlip: wandImage.flip()
-        mirror_size = int(wandImage.width * self.mouse_pos_ratio)
+        mirror_size = int(wandImage.width * pos)
         wandImage.crop(0,0,mirror_size,wandImage.height)
         new_image = wImage(width=mirror_size*2, height=wandImage.size[1])
         new_image.depth = 16
         new_image.composite(wandImage, left=0, top=0)
         wandImage.flop()
         new_image.composite(wandImage, left=mirror_size, top=0)
-        new_image.save(filename='outtest.tif')
+        filename = os.path.basename(files[fileNr])
+        filename_root = os.path.splitext(filename)[0]
+        filename_ext = os.path.splitext(filename)[1]
+        filename = filename_root+self.rotateString+self.mirrorString+self.flipString+self.greyString+'_'+str(mirror_size)+filename_ext
+        filepath = os.path.join(out_dir, filename)
+        
+        new_image.save(filename=filepath)
         print "...save done."        
 
 def main():
