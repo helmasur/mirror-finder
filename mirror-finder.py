@@ -25,8 +25,8 @@ data_dir = os.path.join(main_dir, 'data')
 img_dir = "d:/_gruvan_sat/jpg"
 out_dir = "d:/_gruvan_out"
 out_dir = "out"
-files = glob.glob(os.path.join(data_dir, '*.jpg'))
-fileNr = -1
+files = glob.glob(os.path.join(img_dir, '*.jpg'))
+#fileNr = -1
 statusString = ''
 
 def save_state(filename):
@@ -45,53 +45,64 @@ def load_state(filename):
         statusString = 'No such file yet.'
         raise SystemExit(str(geterror()))
 
-def load_image(number):
-    try:
-        image = pygame.image.load(files[number])
-    except pygame.error:
-        print ('Cannot load image:', fullpath)
-        raise SystemExit(str(geterror()))
-    image = image.convert(32,HWSURFACE)
-    return image
+# def load_image(number):
+#     try:
+#         image = pygame.image.load(files[number])
+#     except pygame.error:
+#         print ('Cannot load image:', fullpath)
+#         raise SystemExit(str(geterror()))
+#     image = image.convert(32,HWSURFACE)
+#     return image
 
-def load_next_image(isNext):
-    #change the index of the file to load
-    global fileNr
-    if fileNr == -1: fileNr=0
-    elif isNext: #next file
-        if fileNr+1 < len(files): fileNr+=1
-        else: fileNr=0
-    else: #previous file
-        if fileNr > 0: fileNr-=1
-        else: fileNr = len(files)-1
+# def load_next_image(isNext):
+#     #change the index of the file to load
+#     global fileNr
+#     if fileNr == -1: fileNr=0
+#     elif isNext: #next file
+#         if fileNr+1 < len(files): fileNr+=1
+#         else: fileNr=0
+#     else: #previous file
+#         if fileNr > 0: fileNr-=1
+#         else: fileNr = len(files)-1
 
-    try:
-        image = pygame.image.load(files[fileNr])
-    except pygame.error:
-        print ('Cannot load image:', fullpath)
-        raise SystemExit(str(geterror()))
-    image = image.convert(32,HWSURFACE)
-    return image
+#     try:
+#         image = pygame.image.load(files[fileNr])
+#     except pygame.error:
+#         print ('Cannot load image:', fullpath)
+#         raise SystemExit(str(geterror()))
+#     image = image.convert(32,HWSURFACE)
+#     return image
 
 def save_image(surface, filename):
     fullpath = os.path.join(data_dir, filename)
     pygame.image.save(surface, fullpath)
 
-def surf_grey(surface):
-    rect = surface.get_rect()
-    image_string = pygame.image.tostring(surface, 'RGB', False)
-    image_pil = Image.fromstring('RGB', rect.size, image_string)
-    image_pil = image_pil.convert('L')
-    image_pil = image_pil.convert('RGB')
-    image_string = image_pil.tostring()
-    surface = pygame.image.fromstring(image_string, rect.size, 'RGB', False)
-    return surface
+# def surf_grey(surface):
+#     rect = surface.get_rect()
+#     image_string = pygame.image.tostring(surface, 'RGB', False)
+#     image_pil = Image.fromstring('RGB', rect.size, image_string)
+#     image_pil = image_pil.convert('L')
+#     image_pil = image_pil.convert('RGB')
+#     image_string = image_pil.tostring()
+#     surface = pygame.image.fromstring(image_string, rect.size, 'RGB', False)
+#     return surface
+
+def smc_to_surface(image):
+    size = image.size
+    mode = image.color_type_name
+    image = image.toPIL()
+    if mode == 'Black':
+        image = image.convert('RGB')
+    image = image.tostring()
+    image = pygame.image.fromstring(image, size, 'RGB', False)
+    return image
 
 class Bild(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self) #call Sprite initializer
         #load file
-        self.original = load_next_image(True)
+        self.current_file = 0
+        self.load('first')
         #create toggles
         self.rot90 = False
         self.rotateString = '0deg'
@@ -105,8 +116,31 @@ class Bild(pygame.sprite.Sprite):
         self.resize()
 
         self.croppos = 0    #position of the mirror
+        
 
-    def load_next(self, isNext):
+    # def load_next(self, isNext):
+    #     self.rot90 = False
+    #     self.hFlip = False
+    #     self.vFlip = False
+    #     self.isGrey = False
+    #     self.fit_height = False
+    #     global statusString
+    #     statusString = ''
+    #     self.original = load_next_image(isNext)
+    #     self.resize()
+
+    # def load_image(self, number):
+    #     self.rot90 = False
+    #     self.hFlip = False
+    #     self.vFlip = False
+    #     self.isGrey = False
+    #     self.fit_height = False
+    #     global statusString
+    #     statusString = ''
+    #     self.original = load_image(number)
+    #     self.resize()
+
+    def load(self, position):
         self.rot90 = False
         self.hFlip = False
         self.vFlip = False
@@ -114,47 +148,67 @@ class Bild(pygame.sprite.Sprite):
         self.fit_height = False
         global statusString
         statusString = ''
-        self.original = load_next_image(isNext)
+        self.original = self.smc_load(self.get_file_path(position))
         self.resize()
 
-    def load_image(self, number):
-        self.rot90 = False
-        self.hFlip = False
-        self.vFlip = False
-        self.isGrey = False
-        self.fit_height = False
-        global statusString
-        statusString = ''
-        self.original = load_image(number)
-        self.resize()        
+    def get_file_path(self, position):
+        #global files
+        if position == 'first': 
+            self.current_file = 0
+        elif position == 'next': #next file
+            if self.current_file < len(files)-1: self.current_file+=1
+            else: self.current_file=0
+        else: #previous file
+            if self.current_file > 0: self.current_file-=1
+            else: self.current_file = len(files)-1
+        return files[self.current_file]
+
+    def smc_load(self, filepath):
+        image = smcImage(filepath)
+        #size = image.size
+        #image = image.toPIL()
+        #image = image.tostring()
+        #image = pygame.image.fromstring(image, size, 'RGB', False)
+        return image
 
     def resize(self):   #create images fitting the current resolution
         self.dispsurf = pygame.display.get_surface()
         self.disprect = self.dispsurf.get_rect()
-        self.rectOriginal = self.original.get_rect()
-        #get fitting factors for both cases of rotation
+        #self.rectOriginal = self.original.get_rect()
+
+        #---get fitting factors for both cases of rotation
         if self.fit_height:
-            self.normScale = 1.0 * self.disprect.height / self.rectOriginal.height
-            self.rotScale = 1.0 * self.disprect.height / self.rectOriginal.width
+            self.normScale = 1.0 * self.disprect.height / self.original.size[1]
+            self.rotScale = 1.0 * self.disprect.height / self.original.size[0]
         else:
-            self.normScale = min(1.0 * self.disprect.height / self.rectOriginal.height, 1.0 * self.disprect.width/2.0 / self.rectOriginal.width)
-            self.rotScale = min(1.0 * self.disprect.height / self.rectOriginal.width, 1.0 * self.disprect.width/2.0 / self.rectOriginal.height)
-        #scale non rotated
-        width = int(self.normScale * self.rectOriginal.width)
-        height = int(self.normScale * self.rectOriginal.height)
-        self.image = pygame.Surface((width,height),HWSURFACE,self.original)
-        pygame.transform.smoothscale(self.original, (width, height), self.image)
-        #scale and rotate
-        width = int(self.rotScale * self.rectOriginal.width)
-        height = int(self.rotScale * self.rectOriginal.height)
-        self.imageRot = pygame.Surface((width,height),HWSURFACE,self.original)
-        pygame.transform.smoothscale(self.original, (width, height), self.imageRot)
-        self.imageRot = pygame.transform.rotate(self.imageRot, 270)
+            self.normScale = min(1.0 * self.disprect.height / self.original.size[1], 1.0 * self.disprect.width/2.0 / self.original.size[0])
+            self.rotScale = min(1.0 * self.disprect.height / self.original.size[0], 1.0 * self.disprect.width/2.0 / self.original.size[1])
+        #---scale non rotated
+        width = int(self.normScale * self.original.size[0])
+        height = int(self.normScale * self.original.size[1])
+        #self.image = pygame.Surface((width,height),HWSURFACE,self.original)
+        #pygame.transform.smoothscale(self.original, (width, height), self.image)
+        image = self.original.resize(width, height)
+        #---scale and rotate
+        width = int(self.rotScale * self.original.size[0])
+        height = int(self.rotScale * self.original.size[1])
+        #self.image_rot = pygame.Surface((width,height),HWSURFACE,self.original)
+        #pygame.transform.smoothscale(self.original, (width, height), self.image_rot)
+        image_rot = self.original.resize(width, height)
+        #self.image_rot = pygame.transform.rotate(self.image_rot, 270)
+        image_rot = image_rot.rotate(90)
         #make greyscale versions
-        self.imageRGB = self.image.copy()
-        self.imageRotRGB = self.imageRot.copy()
-        self.imageGrey = surf_grey(self.image)
-        self.imageRotGrey = surf_grey(self.imageRot)
+        # self.image_rgb = self.image.copy()
+        # self.image_rotRGB = self.image_rot.copy()
+        # self.image_grey = surf_grey(self.image)
+        # self.image_rotGrey = surf_grey(self.image_rot)
+        image_grey = image.greyscale()
+        image_rot_grey = image_rot.greyscale()
+        #--- make surfaces out of smc images
+        self.image_rgb = smc_to_surface(image)
+        self.image_rot_rgb = smc_to_surface(image_rot)
+        self.image_grey = smc_to_surface(image_grey)
+        self.image_rot_grey = smc_to_surface(image_rot_grey)
         #set image rotation and colormode
         self.greyscale()
         self.rotate()
@@ -196,16 +250,16 @@ class Bild(pygame.sprite.Sprite):
 
     def greyscale(self):
         if self.isGrey:
-            self.image = self.imageGrey
-            self.imageRot = self.imageRotGrey
+            self.image = self.image_grey
+            self.image_rot = self.image_rot_grey
         else:
-            self.image = self.imageRGB
-            self.imageRot = self.imageRotRGB
+            self.image = self.image_rgb
+            self.image_rot = self.image_rot_rgb
 
     def rotate(self):
         if self.rot90:
-            self.Limage = self.imageRot
-            self.Rimage = pygame.transform.flip(self.imageRot, True, False)
+            self.Limage = self.image_rot
+            self.Rimage = pygame.transform.flip(self.image_rot, True, False)
             self.update_rects()
         else:
             self.Limage = self.image
@@ -253,40 +307,17 @@ class Bild(pygame.sprite.Sprite):
         else:
             self.greyString = ''
 
-    def wand_save(self):
-        global statusString
-        pos = self.mouse_pos_ratio
-        wandImage = wImage(filename=files[fileNr])
-        depth = wandImage.depth
-        if self.isGrey: wandImage.type = 'grayscale'
-        if self.rot90: wandImage.rotate(90)
-        if self.hFlip: wandImage.flop()
-        if self.vFlip: wandImage.flip()
-        mirror_size = int(wandImage.width * pos)
-        wandImage.crop(0,0,mirror_size,wandImage.height)
-        new_image = wImage(width=mirror_size*2-1, height=wandImage.size[1])  #-1 to avoid double center column
-        new_image.depth = depth
-        new_image.composite(wandImage, left=0, top=0)
-        wandImage.crop(0,0,mirror_size-1,wandImage.height)  #-1 to avoid double center column
-        wandImage.flop()
-        new_image.composite(wandImage, left=mirror_size, top=0)
-        filename = os.path.basename(files[fileNr])
-        filename_root = os.path.splitext(filename)[0]
-        filename_ext = os.path.splitext(filename)[1]
-        filename = filename_root+self.rotateString+self.mirrorString+self.flipString+self.greyString+'_'+str(mirror_size)+filename_ext
-        filepath = os.path.join(out_dir, filename)
-        new_image.save(filename=filepath)
-        statusString = 'Saved: '+filename
-
     def smc_save(self):
         global statusString
-        pos = self.mouse_pos_ratio
-        image = smcImage(files[fileNr])
+        mirror_pos = self.mouse_pos_ratio
+        image = smcImage(files[self.current_file])
+
         if self.isGrey: image = image.greyscale()
         if self.rot90: image = image.rotate(90)
         if self.hFlip: image = image.flipHorizontal()
         if self.vFlip: image = image.flipVertical()
-        mirror_size = int(image.size[0] * pos)
+
+        mirror_size = int(image.size[0] * mirror_pos)
         image = image.crop(0,0,mirror_size,image.height)
         new_image = image.clone()
         new_image = new_image.resize(mirror_size*2-1, image.size[1])
@@ -294,15 +325,14 @@ class Bild(pygame.sprite.Sprite):
         image = image.crop(0,0,mirror_size-1,image.height)  #-1 to avoid double center column
         image = image.flipHorizontal()
         new_image.paste(image, mirror_size, 0)
-        filename = os.path.basename(files[fileNr])
+
+        filename = os.path.basename(files[self.current_file])
         filename_root = os.path.splitext(filename)[0]
         filename_ext = os.path.splitext(filename)[1]
         filename = filename_root+self.rotateString+self.mirrorString+self.flipString+self.greyString+'_'+str(mirror_size)+filename_ext
         filepath = os.path.join(out_dir, filename)
         new_image.save(filepath)
         statusString = 'Saved: '+filename
-
-
 
 def main():
 
@@ -364,11 +394,11 @@ def main():
                     screen_rect = screen.get_rect()
                     bild.resize()
             elif event.type == KEYDOWN and event.key == K_d:
-                bild.load_next(True)
+                bild.load('next')
             elif event.type == MOUSEBUTTONDOWN and event.button == 2:
                 bild.load_next(True)
             elif event.type == KEYDOWN and event.key == K_a:
-                bild.load_next(False)
+                bild.load('prev')
             elif event.type == KEYDOWN and event.key == K_TAB:
                 show_info = show_info == False
             elif event.type == KEYDOWN and (event.key == K_s or event.key == K_RETURN):
