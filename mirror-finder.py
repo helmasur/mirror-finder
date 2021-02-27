@@ -4,7 +4,7 @@ import sys
 #import time
 from pygame.locals import *
 #import random
-import math
+#import math
 #import colorsys
 from PIL import Image
 #import numpy
@@ -17,7 +17,6 @@ import pickle
 #cms https://pypi.python.org/pypi/smc.freeimage
 #saturation*L
 #error management of load non existing state
-#make global statusString more used
 
 
 main_dir = os.path.split(os.path.abspath(__file__))[0]
@@ -99,7 +98,6 @@ class Bild(pygame.sprite.Sprite):
         self.vFlip = False
         self.flipString = '0flip'
         self.isGrey = False
-        self.statusString = ''
         self.fit_height = False
 
         self.resize()
@@ -112,7 +110,8 @@ class Bild(pygame.sprite.Sprite):
         self.vFlip = False
         self.isGrey = False
         self.fit_height = False
-        self.statusString = ''
+        global statusString
+        statusString = ''
         self.original = load_next_image(isNext)
         self.resize()
 
@@ -122,7 +121,8 @@ class Bild(pygame.sprite.Sprite):
         self.vFlip = False
         self.isGrey = False
         self.fit_height = False
-        self.statusString = ''
+        global statusString
+        statusString = ''
         self.original = load_image(number)
         self.resize()        
 
@@ -141,12 +141,12 @@ class Bild(pygame.sprite.Sprite):
         width = int(self.normScale * self.rectOriginal.width)
         height = int(self.normScale * self.rectOriginal.height)
         self.image = pygame.Surface((width,height),0,self.original)
-        pygame.transform.scale(self.original, (width, height), self.image)
+        pygame.transform.smoothscale(self.original, (width, height), self.image)
         #scale and rotate
         width = int(self.rotScale * self.rectOriginal.width)
         height = int(self.rotScale * self.rectOriginal.height)
         self.imageRot = pygame.Surface((width,height),0,self.original)
-        pygame.transform.scale(self.original, (width, height), self.imageRot)
+        pygame.transform.smoothscale(self.original, (width, height), self.imageRot)
         self.imageRot = pygame.transform.rotate(self.imageRot, 270)
         #make greyscale versions
         self.imageRGB = self.image.copy()
@@ -252,8 +252,9 @@ class Bild(pygame.sprite.Sprite):
             self.greyString = ''
 
     def wand_save(self):
+        global statusString
         pos = self.mouse_pos_ratio
-        self.statusString = 'Saving...'
+
         wandImage = wImage(filename=files[fileNr])
         depth = wandImage.depth
         if self.isGrey: wandImage.type = 'grayscale'
@@ -274,7 +275,7 @@ class Bild(pygame.sprite.Sprite):
         filename = filename_root+self.rotateString+self.mirrorString+self.flipString+self.greyString+'_'+str(mirror_size)+filename_ext
         filepath = os.path.join(out_dir, filename)
         new_image.save(filename=filepath)
-        self.statusString = 'Saved: '+filename
+        statusString = 'Saved: '+filename
 
 def main():
 
@@ -292,14 +293,18 @@ def main():
     bild = Bild()
 
     show_info = True
+    show_status = False
 
+    global statusString
 
     #mainloop
     going=True
     while going:
 
         #Handle Input Events
-        for event in pygame.event.get():        
+        for event in pygame.event.get():
+            if event.type == KEYDOWN or event.type == MOUSEBUTTONDOWN:
+                show_status = False
             if event.type == QUIT:
                 save_state('autosave.mir')
                 going = False
@@ -340,6 +345,8 @@ def main():
             elif event.type == KEYDOWN and event.key == K_TAB:
                 show_info = show_info == False
             elif event.type == KEYDOWN and (event.key == K_s or event.key == K_RETURN):
+                statusString = 'Saving...'
+                show_status = True
                 bild.wand_save()
             elif event.type == KEYDOWN and event.key == K_SPACE:
                 bild.toggle('fit')
@@ -347,15 +354,18 @@ def main():
                 bild.toggle('fit')
             elif event.type == KEYDOWN and event.key == K_p:
                 save_state('save.mir')
-                bild.statusString = 'Saved state.'
+                statusString = 'Saved state.'
+                show_status = True
             elif event.type == KEYDOWN and event.key == K_l:
                 load_state('autosave.mir')
                 bild.load_image(fileNr)
-                bild.statusString = 'Loaded autosave.'
+                statusString = 'Loaded autosave.'
+                show_status = True
             elif event.type == KEYDOWN and event.key == K_o:
                 load_state('save.mir')
                 bild.load_image(fileNr)
-                bild.statusString = 'Loaded saved state.'
+                statusString = 'Loaded saved state.'
+                show_status = True
             elif event.type == KEYDOWN:
                 print event.key
 
@@ -399,7 +409,7 @@ def main():
         savestate_text = font.render('P: Save state', False, (128,128,128))
         openstate_text = font.render('O: Open saved state', False, (128,128,128))
         prevstate_text = font.render('L: Load autosaved state', False, (128,128,128))
-        stat_text = font.render(bild.statusString, False, (128,128,128))
+        stat_text = font.render(statusString, False, (128,128,128))
         file_text = font.render(files[fileNr], False, (128,128,128))
         pos_text = font.render('Pos: '+ str(int(bild.mouse_pos_ratio*10000)/100.0)+'...%', False, (128,128,128))
         pos_text_rect = pos_text.get_rect()
@@ -425,9 +435,13 @@ def main():
             screen.blit(openstate_text, (textpos2,140))
             screen.blit(prevstate_text, (textpos2,154))
             
-            screen.blit(stat_text, (0,screen_rect.height-29))
             screen.blit(file_text, (0,screen_rect.height-15))
             screen.blit(pos_text, (screen_rect.width-pos_text_rect.width ,screen_rect.height-15))
+
+            screen.blit(stat_text, (0,screen_rect.height-29))
+        
+        if show_status:
+            screen.blit(stat_text, (0,screen_rect.height-29))
             
 
 
