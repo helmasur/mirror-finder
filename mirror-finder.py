@@ -27,13 +27,14 @@ def save_image(surface, filename):
     pygame.image.save(surface, fullpath)
 
 class Bild(pygame.sprite.Sprite):
-    def __init__(self, dispsurf):
+    def __init__(self):
         pygame.sprite.Sprite.__init__(self) #call Sprite initializer
-        self.filename = 'kant.jpg'
+        self.filename = 'stor.tif'
         self.original = load_image(self.filename)
         self.image = self.original.copy()
         self.rect = self.image.get_rect()
-        self.disprect = dispsurf.get_rect()
+        self.dispsurf = pygame.display.get_surface()
+        self.disprect = self.dispsurf.get_rect()
         scale = min(1.0 * self.disprect.height / self.rect.height, 1.0 * self.disprect.width/2.0 / self.rect.width)
         width = int(scale * self.rect.width)
         height = int(scale * self.rect.height)
@@ -51,16 +52,47 @@ class Bild(pygame.sprite.Sprite):
 
         self.croppos = 0
 
-        self.rotate90 = False
+        self.rot90 = False
         self.rotateString = '0deg'
-        self.rightSideMirror = True
+        self.hFlip = False
         self.mirrorString = 'Rmirror'
-        self.verticalFlip = False
+        self.vFlip = False
         self.flipString = '0flip'
 
+    def toggle(self, item):
+        if item == 'rot90':
+            self.rot90 = self.rot90 == False            #ändra boolvärdet
+            self.rotate90()
+            self.resize()
+            if self.vFlip: self.flip('vFlip')
+            if self.hFlip: self.flip('hFlip')
+        elif item == 'hFlip':
+            self.hFlip = self.hFlip == False            #ändra boolvärdet
+            self.flip(item)
+        elif item == 'vFlip':
+            self.vFlip = self.vFlip == False            #ändra boolvärdet
+            self.flip(item)
 
-    def resize(self, dispsurf):
-        self.disprect = dispsurf.get_rect()
+    def rotate90(self):
+        if self.rot90:
+            self.image = pygame.transform.rotate(self.original, 270)
+            self.rect = self.image.get_rect()
+        else:
+            self.image = self.original
+            self.rect = self.image.get_rect()
+
+    def flip(self, direction):
+        if direction == 'hFlip':
+            self.Limage = pygame.transform.flip(self.Limage, True, False)
+            self.Rimage = pygame.transform.flip(self.Rimage, True, False)
+        if direction == 'vFlip':
+            self.Limage = pygame.transform.flip(self.Limage, False, True)
+            self.Rimage = pygame.transform.flip(self.Rimage, False, True)
+
+
+    def resize(self):
+        self.dispsurf = pygame.display.get_surface()
+        self.disprect = self.dispsurf.get_rect()
         scale = min(1.0 * self.disprect.height / self.rect.height, 1.0 * self.disprect.width/2.0 / self.rect.width)
         width = int(scale * self.rect.width)
         height = int(scale * self.rect.height)
@@ -76,25 +108,6 @@ class Bild(pygame.sprite.Sprite):
         self.Lrect.centery = self.disprect.height / 2
         self.Rrect.centery = self.disprect.height / 2
 
-    def orientation(self):
-        if self.rotate90:
-            self.image = self.original
-            self.rect = self.image.get_rect()
-        else:
-            self.image = pygame.transform.rotate(self.original, 270)
-            self.rect = self.image.get_rect()
-            
-        self.rotate90 = self.rotate90 == False            #ändra boolvärdet
-
-    def flip(self, direction):
-        if direction == 'horizontal':
-            self.rightSideMirror = self.rightSideMirror == False
-            self.Limage = pygame.transform.flip(self.Limage, True, False)
-            self.Rimage = pygame.transform.flip(self.Rimage, True, False)
-        elif direction == 'vertical':
-            self.verticalFlip = self.verticalFlip == False
-            self.Limage = pygame.transform.flip(self.Limage, False, True)
-            self.Rimage = pygame.transform.flip(self.Rimage, False, True)
 
     def update(self):
         mouse = pygame.mouse.get_pos()
@@ -106,15 +119,15 @@ class Bild(pygame.sprite.Sprite):
         self.Rcrop.width = self.croppos
         self.Rcrop.left = self.Rrect.width - self.croppos
 
-        if self.rotate90 == True:
+        if self.rot90 == True:
             self.rotateString = '90deg'
         else:
             self.rotateString = ''
-        if self.rightSideMirror == True:
+        if self.hFlip == True:
             self.mirrorString = 'Rmirror'
         else:
             self.mirrorString = 'Lmirror'
-        if self.verticalFlip == True:
+        if self.vFlip == True:
             self.flipString = 'Vflip'
         else:
             self.flipString = ''
@@ -124,7 +137,7 @@ def main():
     screen = pygame.display.set_mode((640, 480), 0)
     fullscreen = False
     
-    bild = Bild(screen)
+    bild = Bild()
 
     #mainloop
     going=True
@@ -140,17 +153,16 @@ def main():
                 print pygame.mouse.get_pos()
                 print bild.croppos
             elif event.type == KEYDOWN and event.key == K_p:
-                save_image(screen, bild.filename + ' ' + str(bild.croppos) + ' ' + bild.mirrorString + ' ' + bild.rotateString + ' ' + bild.rotateString + '.bmp')
+                save_image(screen, bild.filename + ' ' + str(bild.croppos) + ' ' + bild.mirrorString + ' ' + bild.rotateString + ' ' + bild.rotateString + '.png')
             elif event.type == KEYDOWN and event.key == K_q:
-                bild.orientation()
-                bild.resize(screen)
-                print 'Roterad: ', bild.rotate90
+                bild.toggle('rot90')
+                print 'R', bild.rot90, 'H', bild.hFlip, 'V', bild.vFlip
             elif event.type == KEYDOWN and event.key == K_w:
-                bild.flip('horizontal')
-                print 'Högerspegel: ', bild.rightSideMirror
+                bild.toggle('hFlip')
+                print 'R', bild.rot90, 'H', bild.hFlip, 'V', bild.vFlip
             elif event.type == KEYDOWN and event.key == K_e:
-                bild.flip('vertical')
-                print 'Uppochner: ', bild.verticalFlip
+                bild.toggle('vFlip')
+                print 'R', bild.rot90, 'H', bild.hFlip, 'V', bild.vFlip
             elif event.type == KEYDOWN and event.key == K_f:
                 if fullscreen:
                     fullscreen = False
