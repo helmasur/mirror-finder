@@ -11,23 +11,42 @@ from PIL import Image
 import glob
 #from operator import mul, add
 from wand.image import Image as wImage
+import pickle
 
 #TODO
 #cms https://pypi.python.org/pypi/smc.freeimage
 #saturation*L
+#error management of load non existing state
+#make global statusString more used
 
 
 main_dir = os.path.split(os.path.abspath(__file__))[0]
 data_dir = os.path.join(main_dir, 'data')
-img_dir = "d:/_gruvan_sat"
+img_dir = "d:/_gruvan_sat/jpg"
 out_dir = "d:/_gruvan_out"
-files = glob.glob(os.path.join(img_dir, '*.tif'))
+files = glob.glob(os.path.join(img_dir, '*.jpg'))
 fileNr = -1
+statusString = ''
 
-def load_image(filename):
-    fullpath = os.path.join(img_dir, filename)
+def save_state(filename):
+    state_file = open(filename, 'w') #w for write mode
+    pickle.dump(fileNr, state_file)
+    state_file.close()
+
+def load_state(filename):
+    global fileNr
+    global statusString
     try:
-        image = pygame.image.load(fullpath)
+        state_file = open(filename)
+        fileNr = pickle.load(state_file)
+        state_file.close()
+    except pygame.error:
+        statusString = 'No such file yet.'
+        raise SystemExit(str(geterror()))
+
+def load_image(number):
+    try:
+        image = pygame.image.load(files[number])
     except pygame.error:
         print ('Cannot load image:', fullpath)
         raise SystemExit(str(geterror()))
@@ -51,7 +70,6 @@ def load_next_image(isNext):
         print ('Cannot load image:', fullpath)
         raise SystemExit(str(geterror()))
     image = image.convert()
-
     return image
 
 def save_image(surface, filename):
@@ -94,8 +112,19 @@ class Bild(pygame.sprite.Sprite):
         self.vFlip = False
         self.isGrey = False
         self.fit_height = False
+        self.statusString = ''
         self.original = load_next_image(isNext)
         self.resize()
+
+    def load_image(self, number):
+        self.rot90 = False
+        self.hFlip = False
+        self.vFlip = False
+        self.isGrey = False
+        self.fit_height = False
+        self.statusString = ''
+        self.original = load_image(number)
+        self.resize()        
 
     def resize(self):   #create images fitting the current resolution
         self.dispsurf = pygame.display.get_surface()
@@ -224,7 +253,6 @@ class Bild(pygame.sprite.Sprite):
 
     def wand_save(self):
         pos = self.mouse_pos_ratio
-        print "Wand saving..."
         self.statusString = 'Saving...'
         wandImage = wImage(filename=files[fileNr])
         depth = wandImage.depth
@@ -246,8 +274,7 @@ class Bild(pygame.sprite.Sprite):
         filename = filename_root+self.rotateString+self.mirrorString+self.flipString+self.greyString+'_'+str(mirror_size)+filename_ext
         filepath = os.path.join(out_dir, filename)
         new_image.save(filename=filepath)
-        self.statusString = '...save done. '+filename
-        print "...save done."        
+        self.statusString = 'Saved: '+filename
 
 def main():
 
@@ -274,14 +301,22 @@ def main():
         #Handle Input Events
         for event in pygame.event.get():        
             if event.type == QUIT:
+                save_state('autosave.mir')
                 going = False
             elif event.type == KEYDOWN and event.key == K_ESCAPE:
+                save_state('autosave.mir')
                 going = False
             elif event.type == KEYDOWN and event.key == K_q:
                 bild.toggle('rot90')
+            elif event.type == MOUSEBUTTONDOWN and event.button == 5:
+                bild.toggle('rot90')
             elif event.type == KEYDOWN and event.key == K_w:
                 bild.toggle('hFlip')
+            elif event.type == MOUSEBUTTONDOWN and event.button == 1:
+                bild.toggle('hFlip')
             elif event.type == KEYDOWN and event.key == K_e:
+                bild.toggle('vFlip')
+            elif event.type == MOUSEBUTTONDOWN and event.button == 3:
                 bild.toggle('vFlip')
             elif event.type == KEYDOWN and event.key == K_r:
                 bild.toggle('grey')
@@ -292,20 +327,40 @@ def main():
                     screen_rect = screen.get_rect()
                     bild.resize()
                 else:
-                    screen = pygame.display.set_mode((fullwidth,fullheight), pygame.FULLSCREEN)
+                    screen = pygame.display.set_mode((fullwidth,fullheight), pygame.FULLSCREEN|pygame.HWSURFACE|pygame.DOUBLEBUF)
                     fullscreen = True
                     screen_rect = screen.get_rect()
                     bild.resize()
             elif event.type == KEYDOWN and event.key == K_d:
                 bild.load_next(True)
+            elif event.type == MOUSEBUTTONDOWN and event.button == 2:
+                bild.load_next(True)
             elif event.type == KEYDOWN and event.key == K_a:
                 bild.load_next(False)
             elif event.type == KEYDOWN and event.key == K_TAB:
                 show_info = show_info == False
-            elif event.type == KEYDOWN and event.key == K_s:
+            elif event.type == KEYDOWN and (event.key == K_s or event.key == K_RETURN):
                 bild.wand_save()
             elif event.type == KEYDOWN and event.key == K_SPACE:
                 bild.toggle('fit')
+            elif event.type == MOUSEBUTTONDOWN and event.button == 4:
+                bild.toggle('fit')
+            elif event.type == KEYDOWN and event.key == K_p:
+                save_state('save.mir')
+                bild.statusString = 'Saved state.'
+            elif event.type == KEYDOWN and event.key == K_l:
+                load_state('autosave.mir')
+                bild.load_image(fileNr)
+                bild.statusString = 'Loaded autosave.'
+            elif event.type == KEYDOWN and event.key == K_o:
+                load_state('save.mir')
+                bild.load_image(fileNr)
+                bild.statusString = 'Loaded saved state.'
+            elif event.type == KEYDOWN:
+                print event.key
+
+
+
 
         bild.update()
 
@@ -322,20 +377,28 @@ def main():
         screen.blit(imagearea, imageareaRect)
 
         #create text surfaces
-        if bild.rot90: rot_text = font.render('Q: Rotate 90', False, (0,255,0))
-        else: rot_text = font.render('Q: Rotate 90', False, (128,128,128))
-        if bild.hFlip: hflip_text = font.render('W: Flip H', False, (0,255,0))
-        else: hflip_text = font.render('W: Flip H', False, (128,128,128))
-        if bild.vFlip: vflip_text = font.render('E: Flip V', False, (0,255,0))
-        else: vflip_text = font.render('E: Flip V', False, (128,128,128))
-        if bild.isGrey: grey_text = font.render('R: Greyscale', False, (0,255,0))
-        else: grey_text = font.render('R: Greyscale', False, (128,128,128))
+        if bild.rot90: rot_text = font.render('Rotate 90', False, (0,255,0))
+        else: rot_text = font.render('Rotate 90', False, (128,128,128))
+        if bild.hFlip: hflip_text = font.render('Flip H', False, (0,255,0))
+        else: hflip_text = font.render('Flip H', False, (128,128,128))
+        if bild.vFlip: vflip_text = font.render('Flip V', False, (0,255,0))
+        else: vflip_text = font.render('Flip V', False, (128,128,128))
+        if bild.isGrey: grey_text = font.render('Greyscale', False, (0,255,0))
+        else: grey_text = font.render('Greyscale', False, (128,128,128))
+
+        keyrot_text = font.render('Q, Wheel down: Rotate 90', False, (128,128,128))
+        keyfliph_text = font.render('W, Mouse L: Flip H', False, (128,128,128))
+        keyflipv_text = font.render('E, Mouse R: Flip V', False, (128,128,128))
+        zoom_text = font.render('Space, Wheel up: Zoom', False, (128,128,128))
+
         full_text = font.render('F: Fullscreen', False, (128,128,128))
-        zoom_text = font.render('Space: Zoom', False, (128,128,128))
-        info_text = font.render('Tab: Hide', False, (128,128,128))
-        next_text = font.render('D: Next', False, (128,128,128))
-        prev_text = font.render('A: Prev.', False, (128,128,128))
-        save_text = font.render('S: Save', False, (128,128,128))
+        info_text = font.render('Tab: Hide info', False, (128,128,128))
+        next_text = font.render('D, Wheel click: Next image', False, (128,128,128))
+        prev_text = font.render('A: Previous image', False, (128,128,128))
+        saveimage_text = font.render('S, Enter: Save image', False, (128,128,128))
+        savestate_text = font.render('P: Save state', False, (128,128,128))
+        openstate_text = font.render('O: Open saved state', False, (128,128,128))
+        prevstate_text = font.render('L: Load autosaved state', False, (128,128,128))
         stat_text = font.render(bild.statusString, False, (128,128,128))
         file_text = font.render(files[fileNr], False, (128,128,128))
         pos_text = font.render('Pos: '+ str(int(bild.mouse_pos_ratio*10000)/100.0)+'...%', False, (128,128,128))
@@ -347,13 +410,21 @@ def main():
             screen.blit(hflip_text, (120,0))
             screen.blit(vflip_text, (210,0))
             screen.blit(grey_text, (300,0))
-            screen.blit(zoom_text, (420,0))
-            screen.blit(full_text, (530,0))
+
+            textpos2 = screen_rect.width-200
+            screen.blit(keyrot_text, (textpos2-96,0))
+            screen.blit(keyfliph_text, (textpos2-72,14))
+            screen.blit(keyflipv_text, (textpos2-72,28))
+            screen.blit(zoom_text, (textpos2-112,42))
+            screen.blit(next_text, (textpos2-104,56))
+            screen.blit(prev_text, (textpos2,70))
+            screen.blit(full_text, (textpos2,84))
+            screen.blit(info_text, (textpos2-16,98))
+            screen.blit(saveimage_text, (textpos2-56,112))
+            screen.blit(savestate_text, (textpos2,126))
+            screen.blit(openstate_text, (textpos2,140))
+            screen.blit(prevstate_text, (textpos2,154))
             
-            screen.blit(info_text, (screen_rect.width-90,0))
-            screen.blit(next_text, (screen_rect.width-74,14))
-            screen.blit(prev_text, (screen_rect.width-74,28))
-            screen.blit(save_text, (screen_rect.width-74,42))
             screen.blit(stat_text, (0,screen_rect.height-29))
             screen.blit(file_text, (0,screen_rect.height-15))
             screen.blit(pos_text, (screen_rect.width-pos_text_rect.width ,screen_rect.height-15))
