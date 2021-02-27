@@ -27,12 +27,23 @@ class Bild(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self) #call Sprite initializer
         self.image, self.rect = load_image('test.jpg')
         self.crop = self.rect.copy()
+        self.mirrorrect = self.rect.copy()
+        self.mirrorcrop = self.rect.copy()
+        self.mirrorimage = pygame.transform.flip(self.image, True, False)
+        self.rect.centery = (240)
+        self.mirrorrect.centery = (240)
+        
 
     def update(self):
         mouse = pygame.mouse.get_pos()
         self.crop.width = mouse[0]
+        self.mirrorcrop.width = mouse[0]
+        self.mirrorcrop.left = 300-mouse[0]
+        self.mirrorrect.left = mouse[0]
 
-        #self.image.blit(self.image, (0,0))
+
+
+        
 
 
         
@@ -41,7 +52,12 @@ class Bild2(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self) #call Sprite initializer
         self.image, self.rect = load_image('test.jpg')        
         self.image = pygame.transform.flip(self.image, True, False)
+        self.crop = self.rect.copy()
+        self.rect.centery = (240)
 
+    def update(self):
+        mouse = pygame.mouse.get_pos()
+        self.crop.width = mouse[0]
 
 
 def main():
@@ -54,20 +70,6 @@ def main():
 
     allsprites = pygame.sprite.Group(bild) #lägger till spriten 'bild' i gruppen allsprites
 
-    
-    bild.rect.centery = (240)
-
-    #bild.rect.width = (50)
-    #bild.image.set_clip(bild.rect)
-    #bild.image.scroll(10,10)
-    #bild.crop.width = 10
-    mouse = pygame.mouse.get_pos()
-
-    #allsprites.draw(screen)
-    #pygame.display.flip()
-
-
-    
 
     #mainloop
     going=True
@@ -87,6 +89,7 @@ def main():
         allsprites.update()
         screen.fill ((50, 0, 0))
         screen.blit(bild.image, bild.rect, bild.crop)
+        screen.blit(bild.mirrorimage, bild.mirrorrect, bild.mirrorcrop)
         #allsprites.draw(screen)
         pygame.display.flip()
 
