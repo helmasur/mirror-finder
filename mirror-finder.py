@@ -29,29 +29,10 @@ def save_image(surface, filename):
 class Bild(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self) #call Sprite initializer
+        #load file
         self.filename = 'stor.tif'
         self.original = load_image(self.filename)
-        self.image = self.original.copy()
-        self.rect = self.image.get_rect()
-        self.dispsurf = pygame.display.get_surface()
-        self.disprect = self.dispsurf.get_rect()
-        scale = min(1.0 * self.disprect.height / self.rect.height, 1.0 * self.disprect.width/2.0 / self.rect.width)
-        width = int(scale * self.rect.width)
-        height = int(scale * self.rect.height)
-        self.Limage = pygame.Surface((width,height),0,self.image)
-        pygame.transform.scale(self.image, (width, height), self.Limage)
-        self.Rimage = pygame.transform.flip(self.Limage, True, False)
-
-        self.Lrect = self.Limage.get_rect()
-        self.Rrect = self.Rimage.get_rect()
-        self.Lcrop = self.Lrect.copy()
-        self.Rcrop = self.Rrect.copy()
-        
-        self.Lrect.centery = self.disprect.height / 2
-        self.Rrect.centery = self.disprect.height / 2
-
-        self.croppos = 0
-
+        #create toggles
         self.rot90 = False
         self.rotateString = '0deg'
         self.hFlip = False
@@ -59,11 +40,36 @@ class Bild(pygame.sprite.Sprite):
         self.vFlip = False
         self.flipString = '0flip'
 
+        self.resize()
+
+        self.croppos = 0    #position of the mirror
+
+    def resize(self):   #create images fitting the current resolution
+        self.dispsurf = pygame.display.get_surface()
+        self.disprect = self.dispsurf.get_rect()
+        self.rectOriginal = self.original.get_rect()
+        #get fitting factors for both cases of rotation
+        self.normScale = min(1.0 * self.disprect.height / self.rectOriginal.height, 1.0 * self.disprect.width/2.0 / self.rectOriginal.width)
+        self.rotScale = min(1.0 * self.disprect.height / self.rectOriginal.width, 1.0 * self.disprect.width/2.0 / self.rectOriginal.height)
+        #scale non rotated
+        width = int(self.normScale * self.rectOriginal.width)
+        height = int(self.normScale * self.rectOriginal.height)
+        self.image = pygame.Surface((width,height),0,self.original)
+        pygame.transform.scale(self.original, (width, height), self.image)
+        #scale and rotate
+        width = int(self.rotScale * self.rectOriginal.width)
+        height = int(self.rotScale * self.rectOriginal.height)
+        self.imageRot = pygame.Surface((width,height),0,self.original)
+        pygame.transform.scale(self.original, (width, height), self.imageRot)
+        self.imageRot = pygame.transform.rotate(self.imageRot, 270)
+        #set image rotation
+        self.rotate()
+        self.update_rects()
+
     def toggle(self, item):
         if item == 'rot90':
             self.rot90 = self.rot90 == False            #ändra boolvärdet
-            self.rotate90()
-            self.resize()
+            self.rotate()
             if self.vFlip: self.flip('vFlip')
             if self.hFlip: self.flip('hFlip')
         elif item == 'hFlip':
@@ -73,13 +79,26 @@ class Bild(pygame.sprite.Sprite):
             self.vFlip = self.vFlip == False            #ändra boolvärdet
             self.flip(item)
 
-    def rotate90(self):
+    def update_rects(self):
+        #get rects
+        self.Lrect = self.Limage.get_rect()
+        self.Rrect = self.Rimage.get_rect()
+        self.Lcrop = self.Lrect.copy()
+        self.Rcrop = self.Rrect.copy()
+        #center images vertical
+        self.Lrect.centery = self.disprect.height / 2
+        self.Rrect.centery = self.disprect.height / 2     
+
+    def rotate(self):
         if self.rot90:
-            self.image = pygame.transform.rotate(self.original, 270)
-            self.rect = self.image.get_rect()
+            self.Limage = self.imageRot
+            self.Rimage = pygame.transform.flip(self.imageRot, True, False)
+            self.update_rects()
         else:
-            self.image = self.original
-            self.rect = self.image.get_rect()
+            self.Limage = self.image
+            self.Rimage = pygame.transform.flip(self.image, True, False)
+            self.update_rects()
+
 
     def flip(self, direction):
         if direction == 'hFlip':
@@ -90,23 +109,7 @@ class Bild(pygame.sprite.Sprite):
             self.Rimage = pygame.transform.flip(self.Rimage, False, True)
 
 
-    def resize(self):
-        self.dispsurf = pygame.display.get_surface()
-        self.disprect = self.dispsurf.get_rect()
-        scale = min(1.0 * self.disprect.height / self.rect.height, 1.0 * self.disprect.width/2.0 / self.rect.width)
-        width = int(scale * self.rect.width)
-        height = int(scale * self.rect.height)
-        self.Limage = pygame.Surface((width,height),0,self.image)
-        pygame.transform.scale(self.image, (width, height), self.Limage)
-        self.Rimage = pygame.transform.flip(self.Limage, True, False)
 
-        self.Lrect = self.Limage.get_rect()
-        self.Rrect = self.Rimage.get_rect()
-        self.Lcrop = self.Lrect.copy()
-        self.Rcrop = self.Rrect.copy()
-
-        self.Lrect.centery = self.disprect.height / 2
-        self.Rrect.centery = self.disprect.height / 2
 
 
     def update(self):
@@ -120,15 +123,15 @@ class Bild(pygame.sprite.Sprite):
         self.Rcrop.left = self.Rrect.width - self.croppos
 
         if self.rot90 == True:
-            self.rotateString = '90deg'
+            self.rotateString = 'rot90'
         else:
             self.rotateString = ''
         if self.hFlip == True:
-            self.mirrorString = 'Rmirror'
+            self.mirrorString = 'hFlip'
         else:
-            self.mirrorString = 'Lmirror'
+            self.mirrorString = ''
         if self.vFlip == True:
-            self.flipString = 'Vflip'
+            self.flipString = 'vFlip'
         else:
             self.flipString = ''
 def main():
@@ -165,13 +168,13 @@ def main():
                 print 'R', bild.rot90, 'H', bild.hFlip, 'V', bild.vFlip
             elif event.type == KEYDOWN and event.key == K_f:
                 if fullscreen:
-                    fullscreen = False
                     pygame.display.set_mode((640,480))
-                    bild.resize(screen)
+                    fullscreen = False
+                    bild.resize()
                 else:
-                    fullscreen = True
                     pygame.display.set_mode((1680,1050), pygame.FULLSCREEN)
-                    bild.resize(screen)
+                    fullscreen = True
+                    bild.resize()
 
         bild.update()
         screen.fill ((50, 0, 0))
