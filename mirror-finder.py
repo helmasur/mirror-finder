@@ -8,9 +8,13 @@ import math
 #import colorsys
 #from PIL import Image
 #import numpy
+import glob
+
 
 main_dir = os.path.split(os.path.abspath(__file__))[0]
 data_dir = os.path.join(main_dir, 'data')
+files = glob.glob(os.path.join(data_dir, '*.jpg'))
+fileNr = -1
 
 def load_image(filename):
     fullpath = os.path.join(data_dir, filename)
@@ -22,6 +26,26 @@ def load_image(filename):
     image = image.convert()
     return image
 
+def load_next_image(isNext):
+    #change the index of the file to load
+    global fileNr
+    if fileNr == -1: fileNr=0
+    elif isNext: #next file
+        if fileNr+1 < len(files): fileNr+=1
+        else: fileNr=0
+    else: #previous file
+        if fileNr > 0: fileNr-=1
+        else: fileNr = len(files)-1
+
+    try:
+        image = pygame.image.load(files[fileNr])
+    except pygame.error:
+        print ('Cannot load image:', fullpath)
+        raise SystemExit(str(geterror()))
+    image = image.convert()
+
+    return image
+
 def save_image(surface, filename):
     fullpath = os.path.join(data_dir, filename)
     pygame.image.save(surface, fullpath)
@@ -30,8 +54,8 @@ class Bild(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self) #call Sprite initializer
         #load file
-        self.filename = 'test.jpg'
-        self.original = load_image(self.filename)
+        #self.filename = 'test.jpg'
+        self.original = load_next_image(True)
         #create toggles
         self.rot90 = False
         self.rotateString = '0deg'
@@ -43,6 +67,10 @@ class Bild(pygame.sprite.Sprite):
         self.resize()
 
         self.croppos = 0    #position of the mirror
+
+    def load_next(self, isNext):
+        self.original = load_next_image(isNext)
+        self.resize()
 
     def resize(self):   #create images fitting the current resolution
         self.dispsurf = pygame.display.get_surface()
@@ -154,6 +182,9 @@ def main():
             elif event.type == KEYDOWN and event.key == K_d:
                 print pygame.mouse.get_pos()
                 print bild.croppos
+                global fileNr
+                fileNr += 1
+                print fileNr
             elif event.type == KEYDOWN and event.key == K_p:
                 save_image(imagearea, bild.filename + ' ' + str(bild.croppos) + ' ' + bild.mirrorString + ' ' + bild.rotateString + ' ' + bild.rotateString + '.png')
             elif event.type == KEYDOWN and event.key == K_q:
@@ -174,6 +205,10 @@ def main():
                     pygame.display.set_mode((1680,1050), pygame.FULLSCREEN)
                     fullscreen = True
                     bild.resize()
+            elif event.type == KEYDOWN and event.key == K_n:
+                bild.load_next(True)
+            elif event.type == KEYDOWN and event.key == K_b:
+                bild.load_next(False)
 
         bild.update()
 
