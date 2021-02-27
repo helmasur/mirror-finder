@@ -32,16 +32,27 @@ class Bild(pygame.sprite.Sprite):
         self.mirrorimage = pygame.transform.flip(self.image, True, False)
         self.rect.centery = (240)
         self.mirrorrect.centery = (240)
-        
 
     def update(self):
         mouse = pygame.mouse.get_pos()
         crop = min(mouse[0], self.rect.width)
-        
         self.crop.width = crop
         self.mirrorrect.left = crop
         self.mirrorcrop.width = crop
         self.mirrorcrop.left = self.rect.width-crop
+
+    def resize(self, displaywidth):
+        #ratio = self.rect.height/self.rect.width
+        factor = (displaywidth/2.0) / self.rect.width
+        width = int(self.rect.width * factor)
+        height = int(self.rect.height * factor)
+        self.rect.width = width
+        self.rect.height = height
+        self.mirrorrect.width = width
+        self.mirrorrect.height = height
+        self.crop.height = height
+        self.mirrorcrop.height = height
+        self.image = pygame.transform.scale(self.image, (width, height))
         
 
 
@@ -62,7 +73,8 @@ class Bild2(pygame.sprite.Sprite):
 def main():
 
     pygame.init()
-    screen = pygame.display.set_mode((640, 480), 0, 32)
+    screen = pygame.display.set_mode((640, 480), 0)
+    fullscreen = False
     
     bild = Bild()
     #bild2 = Bild2()
@@ -80,8 +92,16 @@ def main():
                 going = False
             elif event.type == KEYDOWN and event.key == K_ESCAPE:
                 going = False
-            elif event.type == KEYDOWN and event.key == K_m:
-                print pygame.mouse.get_pos()
+            elif event.type == KEYDOWN and event.key == K_f:
+                if fullscreen:
+                    fullscreen = False
+                    bild.resize(640)
+                    pygame.display.set_mode((640,480))
+                else:
+                    fullscreen = True
+                    pygame.display.set_mode((1680,1050), pygame.FULLSCREEN)
+                    bild.resize(1680)
+
             
     
         allsprites.update()
