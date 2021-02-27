@@ -26,10 +26,15 @@ class Bild(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self) #call Sprite initializer
         self.image, self.rect = load_image('test.jpg')
+        self.crop = self.rect.copy()
 
     def update(self):
+        mouse = pygame.mouse.get_pos()
+        self.crop.width = mouse[0]
 
-        self.rect.center = (200,200)
+        #self.image.blit(self.image, (0,0))
+
+
         
 class Bild2(pygame.sprite.Sprite):
     def __init__(self):
@@ -49,7 +54,15 @@ def main():
 
     allsprites = pygame.sprite.Group(bild) #lägger till spriten 'bild' i gruppen allsprites
 
-       
+    
+    bild.rect.centery = (240)
+
+    #bild.rect.width = (50)
+    #bild.image.set_clip(bild.rect)
+    #bild.image.scroll(10,10)
+    #bild.crop.width = 10
+    mouse = pygame.mouse.get_pos()
+
     #allsprites.draw(screen)
     #pygame.display.flip()
 
@@ -66,11 +79,15 @@ def main():
                 going = False
             elif event.type == KEYDOWN and event.key == K_ESCAPE:
                 going = False
+            elif event.type == KEYDOWN and event.key == K_m:
+                print pygame.mouse.get_pos()
             elif event.type == KEYDOWN:
                 going = False                #plot.setLevel(int(event.unicode))
     
         allsprites.update()
-        allsprites.draw(screen)
+        screen.fill ((50, 0, 0))
+        screen.blit(bild.image, bild.rect, bild.crop)
+        #allsprites.draw(screen)
         pygame.display.flip()
 
 if __name__ == '__main__':
