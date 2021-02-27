@@ -175,8 +175,7 @@ class Bild(pygame.sprite.Sprite):
     def update(self):
         mouse = pygame.mouse.get_pos()
         self.mouse_pos_ratio = 1.0 * (mouse[0]+1) / self.disprect.width #used for save
-        #self.croppos = min((mouse[0]+1)/2, self.Lrect.width)
-        self.croppos = (mouse[0]+1)/2
+        self.croppos = min((mouse[0]+1)/2, self.Lrect.width) #since tall images might not fill the width
 
         self.Lrect.left = self.disprect.centerx - self.croppos
         self.Rrect.left = self.disprect.centerx
@@ -222,9 +221,9 @@ class Bild(pygame.sprite.Sprite):
         print "Wand saving..."
         wandImage = wImage(filename=files[fileNr])
         if self.isGrey: wandImage.type = 'grayscale'
-        if self.rot90: wandImage = wandImage.rotate(90)
-        if self.hFlip: wandImage = wandImage.flop()
-        if self.vFlip: wandImage = wandImage.flip()
+        if self.rot90: wandImage.rotate(90)
+        if self.hFlip: wandImage.flop()
+        if self.vFlip: wandImage.flip()
         mirror_size = int(wandImage.width * self.mouse_pos_ratio)
         wandImage.crop(0,0,mirror_size,wandImage.height)
         new_image = wImage(width=mirror_size*2, height=wandImage.size[1])
