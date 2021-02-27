@@ -47,6 +47,8 @@ def load_next_image(isNext):
 
     return image
 
+
+
 def save_image(surface, filename):
     fullpath = os.path.join(data_dir, filename)
     pygame.image.save(surface, fullpath)
@@ -171,6 +173,7 @@ class Bild(pygame.sprite.Sprite):
 
     def update(self):
         mouse = pygame.mouse.get_pos()
+        self.mouse_pos_ratio = 1.0 * (mouse[0]+1) / self.disprect.width #used for save
         #self.croppos = min((mouse[0]+1)/2, self.Lrect.width)
         self.croppos = (mouse[0]+1)/2
 
@@ -196,6 +199,20 @@ class Bild(pygame.sprite.Sprite):
             self.greyString = 'G'
         else:
             self.flipString = ''
+
+    def save(self):
+        pilImage = Image.open(files[fileNr])
+        if self.isGrey: pilImage = pilImage.convert('L')
+        if self.rot90: pilImage = pilImage.rotate(90, 'NEAREST', True)
+        if self.hFlip: pilImage = pilImage.transpose('FLIP_LEFT_RIGHT')
+        if self.vFlip: pilImage = pilImage.transpose('FLIP_TOP_BOTTOM')
+        mirror_size = int(pilImage.size[0] * self.mouse_pos_ratio)
+        pilImage = pilImage.crop((0,0,mirror_size,pilImage.size[1]))
+        new_image = Image.new(pilImage.mode, (mirror_size*2, pilImage.size[1]))
+        new_image.paste(pilImage, (0,0))
+        pilImage = pilImage.transpose(0)
+        new_image.paste(pilImage, (mirror_size,0))
+        new_image.save('outtest.bmp')
 
 def main():
 
@@ -258,6 +275,8 @@ def main():
                 bild.load_next(False)
             elif event.type == KEYDOWN and event.key == K_TAB:
                 show_info = show_info == False
+            elif event.type == KEYDOWN and event.key == K_s:
+                bild.save()
 
         bild.update()
 
@@ -289,7 +308,7 @@ def main():
         file_text = font.render(files[fileNr], False, (128,128,128))
         #pos_text = font.render('Pos: '+ str(bild.croppos), False, (128,128,128))
         #pos_text_rect = pos_text.get_rect()
-        
+
         #render texts
         if show_info:
             screen.blit(rot_text, (0,0))
