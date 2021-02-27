@@ -7,9 +7,9 @@ from pygame.locals import *
 import math
 #import colorsys
 from PIL import Image
-import numpy
+#import numpy
 import glob
-from operator import mul, add
+#from operator import mul, add
 from wand.image import Image as wImage
 
 
@@ -174,8 +174,13 @@ class Bild(pygame.sprite.Sprite):
 
     def update(self):
         mouse = pygame.mouse.get_pos()
-        self.mouse_pos_ratio = 1.0 * (mouse[0]+1) / self.disprect.width #used for save
-        self.croppos = min((mouse[0]+1)/2, self.Lrect.width) #since tall images might not fill the width
+        #mouse = mouse[0]+1 #the first column of pixels is 1 in relation to width of screen
+        mouse = max(mouse[0]-10, 0) #move active area 10px to the right and limit to min 0
+        mouse = min(1.0 * mouse / (self.disprect.width-20), 1) #crop active area 10px right and limit to 1
+        self.mouse_pos_ratio = mouse
+        #self.mouse_pos_ratio = 1.0 * (mouse[0]+1) / self.disprect.width #used for save
+        #self.croppos = min((mouse[0]+1)/2, self.Lrect.width) #since tall images might not fill the width
+        self.croppos = min(int(mouse*self.Lrect.width), self.Lrect.width) #since tall images might not fill the width
 
         self.Lrect.left = self.disprect.centerx - self.croppos
         self.Rrect.left = self.disprect.centerx
@@ -200,23 +205,6 @@ class Bild(pygame.sprite.Sprite):
         else:
             self.flipString = ''
 
-    def save(self):
-        print "Pil saving..."
-        pilImage = Image.open(files[fileNr])
-        print pilImage.mode
-        if self.isGrey: pilImage = pilImage.convert('L')
-        if self.rot90: pilImage = pilImage.rotate(90, 'NEAREST', True)
-        if self.hFlip: pilImage = pilImage.transpose('FLIP_LEFT_RIGHT')
-        if self.vFlip: pilImage = pilImage.transpose('FLIP_TOP_BOTTOM')
-        mirror_size = int(pilImage.size[0] * self.mouse_pos_ratio)
-        pilImage = pilImage.crop((0,0,mirror_size,pilImage.size[1]))
-        new_image = Image.new(pilImage.mode, (mirror_size*2, pilImage.size[1]))
-        new_image.paste(pilImage, (0,0))
-        pilImage = pilImage.transpose(0)
-        new_image.paste(pilImage, (mirror_size,0))
-        new_image.save('outtest.png')
-        print "...save done."
-
     def wand_save(self):
         print "Wand saving..."
         wandImage = wImage(filename=files[fileNr])
@@ -237,6 +225,9 @@ class Bild(pygame.sprite.Sprite):
 def main():
 
     pygame.init()
+
+    fullwidth = pygame.display.Info().current_w
+    fullheight = pygame.display.Info().current_h
     screen = pygame.display.set_mode((640, 480), 0)
     screen_rect = screen.get_rect()
 
@@ -285,7 +276,7 @@ def main():
                     screen_rect = screen.get_rect()
                     bild.resize()
                 else:
-                    pygame.display.set_mode((1680,1050), pygame.FULLSCREEN)
+                    pygame.display.set_mode((fullwidth,fullheight), pygame.FULLSCREEN)
                     fullscreen = True
                     screen_rect = screen.get_rect()
                     bild.resize()
@@ -326,8 +317,8 @@ def main():
         next_text = font.render('N: Next', False, (128,128,128))
         prev_text = font.render('B: Prev.', False, (128,128,128))
         file_text = font.render(files[fileNr], False, (128,128,128))
-        #pos_text = font.render('Pos: '+ str(bild.croppos), False, (128,128,128))
-        #pos_text_rect = pos_text.get_rect()
+        pos_text = font.render('Pos: '+ str(int(bild.mouse_pos_ratio*10000)/100.0)+'...%', False, (128,128,128))
+        pos_text_rect = pos_text.get_rect()
 
         #render texts
         if show_info:
@@ -340,7 +331,7 @@ def main():
             screen.blit(next_text, (screen_rect.width-74,14))
             screen.blit(prev_text, (screen_rect.width-74,28))
             screen.blit(file_text, (0,screen_rect.height-15))
-            #screen.blit(pos_text, (screen_rect.width-pos_text_rect.width ,screen_rect.height-15))
+            screen.blit(pos_text, (screen_rect.width-pos_text_rect.width ,screen_rect.height-15))
             
 
 
