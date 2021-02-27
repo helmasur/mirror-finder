@@ -107,8 +107,11 @@ class Bild(pygame.sprite.Sprite):
         self.imageRotRGB = self.imageRot.copy()
         self.imageGrey = surf_grey(self.image)
         self.imageRotGrey = surf_grey(self.imageRot)
-        #set image rotation
+        #set image rotation and colormode
+        self.greyscale()
         self.rotate()
+        if self.vFlip: self.flip('vFlip')
+        if self.hFlip: self.flip('hFlip')
         self.update_rects()
 
     def toggle(self, item):
@@ -168,7 +171,8 @@ class Bild(pygame.sprite.Sprite):
 
     def update(self):
         mouse = pygame.mouse.get_pos()
-        self.croppos = min((mouse[0]+1)/2, self.Lrect.width)
+        #self.croppos = min((mouse[0]+1)/2, self.Lrect.width)
+        self.croppos = (mouse[0]+1)/2
 
         self.Lrect.left = self.disprect.centerx - self.croppos
         self.Rrect.left = self.disprect.centerx
@@ -177,27 +181,35 @@ class Bild(pygame.sprite.Sprite):
         self.Rcrop.left = self.Rrect.width - self.croppos
 
         if self.rot90 == True:
-            self.rotateString = 'rot90'
+            self.rotateString = 'R90'
         else:
             self.rotateString = ''
         if self.hFlip == True:
-            self.mirrorString = 'hFlip'
+            self.mirrorString = 'fH'
         else:
             self.mirrorString = ''
         if self.vFlip == True:
-            self.flipString = 'vFlip'
+            self.flipString = 'fV'
         else:
             self.flipString = ''
-            
+        if self.isGrey == True:
+            self.greyString = 'G'
+        else:
+            self.flipString = ''
+
 def main():
 
     pygame.init()
     screen = pygame.display.set_mode((640, 480), 0)
-
+    screen_rect = screen.get_rect()
 
     fullscreen = False
+
+    font = pygame.font.Font(os.path.join(data_dir, 'vgafix.fon'), 14)
     
     bild = Bild()
+
+    show_info = True
 
 
     #mainloop
@@ -227,33 +239,72 @@ def main():
             elif event.type == KEYDOWN and event.key == K_e:
                 bild.toggle('vFlip')
                 print 'R', bild.rot90, 'H', bild.hFlip, 'V', bild.vFlip
-            elif event.type == KEYDOWN and event.key == K_g:
+            elif event.type == KEYDOWN and event.key == K_r:
                 bild.toggle('grey')
             elif event.type == KEYDOWN and event.key == K_f:
                 if fullscreen:
                     pygame.display.set_mode((640,480))
                     fullscreen = False
+                    screen_rect = screen.get_rect()
                     bild.resize()
                 else:
                     pygame.display.set_mode((1680,1050), pygame.FULLSCREEN)
                     fullscreen = True
+                    screen_rect = screen.get_rect()
                     bild.resize()
             elif event.type == KEYDOWN and event.key == K_n:
                 bild.load_next(True)
             elif event.type == KEYDOWN and event.key == K_b:
                 bild.load_next(False)
+            elif event.type == KEYDOWN and event.key == K_TAB:
+                show_info = show_info == False
 
         bild.update()
 
         imagearea = pygame.Surface((bild.Lrect.width*2, bild.Lrect.height), 0, screen)
         imageareaRect = imagearea.get_rect()
         imageareaRect.centery = pygame.display.Info().current_h / 2
+
+
         
         screen.fill ((50, 0, 0))
         imagearea.fill ((50, 0, 0))
         imagearea.blit(bild.Limage, bild.Lrect, bild.Lcrop)
         imagearea.blit(bild.Rimage, bild.Rrect, bild.Rcrop)
         screen.blit(imagearea, imageareaRect)
+
+        #create text surfaces
+        if bild.rot90: rot_text = font.render('Q: Rotate 90', False, (0,255,0))
+        else: rot_text = font.render('Q: Rotate 90', False, (128,128,128))
+        if bild.hFlip: hflip_text = font.render('W: Flip H', False, (0,255,0))
+        else: hflip_text = font.render('W: Flip H', False, (128,128,128))
+        if bild.vFlip: vflip_text = font.render('E: Flip V', False, (0,255,0))
+        else: vflip_text = font.render('E: Flip V', False, (128,128,128))
+        if bild.isGrey: grey_text = font.render('R: Greyscale', False, (0,255,0))
+        else: grey_text = font.render('R: Greyscale', False, (128,128,128))
+        full_text = font.render('F: Fullscreen', False, (128,128,128))
+        info_text = font.render('Tab: Hide', False, (128,128,128))
+        next_text = font.render('N: Next', False, (128,128,128))
+        prev_text = font.render('B: Prev.', False, (128,128,128))
+        file_text = font.render(files[fileNr], False, (128,128,128))
+        #pos_text = font.render('Pos: '+ str(bild.croppos), False, (128,128,128))
+        #pos_text_rect = pos_text.get_rect()
+        
+        #render texts
+        if show_info:
+            screen.blit(rot_text, (0,0))
+            screen.blit(hflip_text, (120,0))
+            screen.blit(vflip_text, (210,0))
+            screen.blit(grey_text, (300,0))
+            screen.blit(full_text, (420,0))
+            screen.blit(info_text, (screen_rect.width-90,0))
+            screen.blit(next_text, (screen_rect.width-74,14))
+            screen.blit(prev_text, (screen_rect.width-74,28))
+            screen.blit(file_text, (0,screen_rect.height-15))
+            #screen.blit(pos_text, (screen_rect.width-pos_text_rect.width ,screen_rect.height-15))
+            
+
+
         pygame.display.flip()
 
 if __name__ == '__main__':
