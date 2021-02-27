@@ -15,8 +15,11 @@ import pickle
 from smc.freeimage import Image as smcImage
 
 #TODO
+#rotation
+#search for file to open
 #saturation*L
 #error management of load non existing state
+
 
 
 main_dir = os.path.split(os.path.abspath(__file__))[0]
@@ -25,6 +28,7 @@ img_dir = "d:/_berg1saturize"
 out_dir = "d:/_berg1mirrors"
 #out_dir = "out"
 files = glob.glob(os.path.join(img_dir, '*.jpg'))
+files.insert(0, os.path.join(data_dir, '01test.jpg')) #inserts a test image/splash at the beginning of file list, allows quick startup and never empty filelist
 current_file = -1
 statusString = ''
 
@@ -389,11 +393,11 @@ def main():
                     fullscreen = True
                     screen_rect = screen.get_rect()
                     bild.resize()
-            elif event.type == KEYDOWN and event.key == K_d:
+            elif event.type == KEYDOWN and event.key == K_RIGHT:
                 bild.load('next')
             elif event.type == MOUSEBUTTONDOWN and event.button == 2:
                 bild.load('next')
-            elif event.type == KEYDOWN and event.key == K_a:
+            elif event.type == KEYDOWN and event.key == K_LEFT:
                 bild.load('prev')
             elif event.type == KEYDOWN and event.key == K_TAB:
                 show_info = show_info == False
@@ -401,7 +405,7 @@ def main():
                 statusString = 'Saving...'
                 show_status = True
                 bild.smc_save()
-            elif event.type == KEYDOWN and event.key == K_SPACE:
+            elif event.type == KEYDOWN and event.key == K_z:
                 bild.toggle('fit')
             elif event.type == MOUSEBUTTONDOWN and event.button == 4:
                 bild.toggle('fit')
@@ -450,12 +454,12 @@ def main():
         keyrot_text = font.render('Q, Wheel down: Rotate 90', False, (128,128,128))
         keyfliph_text = font.render('W, Mouse L: Flip H', False, (128,128,128))
         keyflipv_text = font.render('E, Mouse R: Flip V', False, (128,128,128))
-        zoom_text = font.render('Space, Wheel up: Zoom', False, (128,128,128))
+        zoom_text = font.render('Z, Wheel up: Zoom', False, (128,128,128))
 
         full_text = font.render('F: Fullscreen', False, (128,128,128))
         info_text = font.render('Tab: Hide info', False, (128,128,128))
-        next_text = font.render('D, Wheel click: Next image', False, (128,128,128))
-        prev_text = font.render('A: Previous image', False, (128,128,128))
+        next_text = font.render('Right arrow, Wheel click: Next image', False, (128,128,128))
+        prev_text = font.render('Left arrow: Previous image', False, (128,128,128))
         saveimage_text = font.render('S, Enter: Save image', False, (128,128,128))
         savestate_text = font.render('P: Save state', False, (128,128,128))
         openstate_text = font.render('O: Open saved state', False, (128,128,128))
@@ -465,7 +469,7 @@ def main():
         pos_text = font.render('Pos: '+ str(int(bild.mouse_pos_ratio*10000)/100.0)+'...%', False, (128,128,128))
         pos_text_rect = pos_text.get_rect()
 
-        #render texts
+        #render texts (8px spacing / letter)
         if show_info:
             screen.blit(rot_text, (0,0))
             screen.blit(hflip_text, (120,0))
@@ -476,9 +480,9 @@ def main():
             screen.blit(keyrot_text, (textpos2-96,0))
             screen.blit(keyfliph_text, (textpos2-72,14))
             screen.blit(keyflipv_text, (textpos2-72,28))
-            screen.blit(zoom_text, (textpos2-112,42))
-            screen.blit(next_text, (textpos2-104,56))
-            screen.blit(prev_text, (textpos2,70))
+            screen.blit(zoom_text, (textpos2-80,42))
+            screen.blit(next_text, (textpos2-184,56))
+            screen.blit(prev_text, (textpos2-72,70))
             screen.blit(full_text, (textpos2,84))
             screen.blit(info_text, (textpos2-16,98))
             screen.blit(saveimage_text, (textpos2-56,112))
