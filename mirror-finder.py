@@ -82,6 +82,7 @@ class Bild(pygame.sprite.Sprite):
         self.flipString = '0flip'
         self.isGrey = False
         self.statusString = ''
+        self.fit_height = False
 
         self.resize()
 
@@ -92,6 +93,7 @@ class Bild(pygame.sprite.Sprite):
         self.hFlip = False
         self.vFlip = False
         self.isGrey = False
+        self.fit_height = False
         self.original = load_next_image(isNext)
         self.resize()
 
@@ -100,8 +102,12 @@ class Bild(pygame.sprite.Sprite):
         self.disprect = self.dispsurf.get_rect()
         self.rectOriginal = self.original.get_rect()
         #get fitting factors for both cases of rotation
-        self.normScale = min(1.0 * self.disprect.height / self.rectOriginal.height, 1.0 * self.disprect.width/2.0 / self.rectOriginal.width)
-        self.rotScale = min(1.0 * self.disprect.height / self.rectOriginal.width, 1.0 * self.disprect.width/2.0 / self.rectOriginal.height)
+        if self.fit_height:
+            self.normScale = 1.0 * self.disprect.height / self.rectOriginal.height
+            self.rotScale = 1.0 * self.disprect.height / self.rectOriginal.width
+        else:
+            self.normScale = min(1.0 * self.disprect.height / self.rectOriginal.height, 1.0 * self.disprect.width/2.0 / self.rectOriginal.width)
+            self.rotScale = min(1.0 * self.disprect.height / self.rectOriginal.width, 1.0 * self.disprect.width/2.0 / self.rectOriginal.height)
         #scale non rotated
         width = int(self.normScale * self.rectOriginal.width)
         height = int(self.normScale * self.rectOriginal.height)
@@ -143,6 +149,9 @@ class Bild(pygame.sprite.Sprite):
             self.rotate()
             if self.vFlip: self.flip('vFlip')
             if self.hFlip: self.flip('hFlip')
+        elif item == 'fit':
+            self.fit_height = self.fit_height == False
+            self.resize()
 
     def update_rects(self):
         #get rects
@@ -246,7 +255,7 @@ def main():
 
     fullwidth = pygame.display.Info().current_w
     fullheight = pygame.display.Info().current_h
-    screen = pygame.display.set_mode((640, 480), 0)
+    screen = pygame.display.set_mode((1024, 768), 0)
     screen_rect = screen.get_rect()
 
     fullscreen = False
@@ -278,7 +287,7 @@ def main():
                 bild.toggle('grey')
             elif event.type == KEYDOWN and event.key == K_f:
                 if fullscreen:
-                    screen = pygame.display.set_mode((640,480))
+                    screen = pygame.display.set_mode((1024,768))
                     fullscreen = False
                     screen_rect = screen.get_rect()
                     bild.resize()
@@ -287,14 +296,16 @@ def main():
                     fullscreen = True
                     screen_rect = screen.get_rect()
                     bild.resize()
-            elif event.type == KEYDOWN and event.key == K_n:
+            elif event.type == KEYDOWN and event.key == K_d:
                 bild.load_next(True)
-            elif event.type == KEYDOWN and event.key == K_b:
+            elif event.type == KEYDOWN and event.key == K_a:
                 bild.load_next(False)
             elif event.type == KEYDOWN and event.key == K_TAB:
                 show_info = show_info == False
             elif event.type == KEYDOWN and event.key == K_s:
                 bild.wand_save()
+            elif event.type == KEYDOWN and event.key == K_SPACE:
+                bild.toggle('fit')
 
         bild.update()
 
@@ -320,9 +331,10 @@ def main():
         if bild.isGrey: grey_text = font.render('R: Greyscale', False, (0,255,0))
         else: grey_text = font.render('R: Greyscale', False, (128,128,128))
         full_text = font.render('F: Fullscreen', False, (128,128,128))
+        zoom_text = font.render('Space: Zoom', False, (128,128,128))
         info_text = font.render('Tab: Hide', False, (128,128,128))
-        next_text = font.render('N: Next', False, (128,128,128))
-        prev_text = font.render('B: Prev.', False, (128,128,128))
+        next_text = font.render('D: Next', False, (128,128,128))
+        prev_text = font.render('A: Prev.', False, (128,128,128))
         save_text = font.render('S: Save', False, (128,128,128))
         stat_text = font.render(bild.statusString, False, (128,128,128))
         file_text = font.render(files[fileNr], False, (128,128,128))
@@ -335,7 +347,9 @@ def main():
             screen.blit(hflip_text, (120,0))
             screen.blit(vflip_text, (210,0))
             screen.blit(grey_text, (300,0))
-            screen.blit(full_text, (420,0))
+            screen.blit(zoom_text, (420,0))
+            screen.blit(full_text, (530,0))
+            
             screen.blit(info_text, (screen_rect.width-90,0))
             screen.blit(next_text, (screen_rect.width-74,14))
             screen.blit(prev_text, (screen_rect.width-74,28))
