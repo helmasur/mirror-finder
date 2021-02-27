@@ -10,11 +10,12 @@ from PIL import Image
 import numpy
 import glob
 from operator import mul, add
+from wand.image import Image as wImage
 
 
 main_dir = os.path.split(os.path.abspath(__file__))[0]
 data_dir = os.path.join(main_dir, 'data')
-files = glob.glob(os.path.join(data_dir, '*.jpg'))
+files = glob.glob(os.path.join(data_dir, '*.tif'))
 fileNr = -1
 
 def load_image(filename):
@@ -201,7 +202,9 @@ class Bild(pygame.sprite.Sprite):
             self.flipString = ''
 
     def save(self):
+        print "Pil saving..."
         pilImage = Image.open(files[fileNr])
+        print pilImage.mode
         if self.isGrey: pilImage = pilImage.convert('L')
         if self.rot90: pilImage = pilImage.rotate(90, 'NEAREST', True)
         if self.hFlip: pilImage = pilImage.transpose('FLIP_LEFT_RIGHT')
@@ -212,7 +215,25 @@ class Bild(pygame.sprite.Sprite):
         new_image.paste(pilImage, (0,0))
         pilImage = pilImage.transpose(0)
         new_image.paste(pilImage, (mirror_size,0))
-        new_image.save('outtest.bmp')
+        new_image.save('outtest.png')
+        print "...save done."
+
+    def wand_save(self):
+        print "Wand saving..."
+        wandImage = wImage(filename=files[fileNr])
+        if self.isGrey: wandImage.type = 'grayscale'
+        if self.rot90: wandImage = wandImage.rotate(90)
+        if self.hFlip: wandImage = wandImage.flop()
+        if self.vFlip: wandImage = wandImage.flip()
+        mirror_size = int(wandImage.width * self.mouse_pos_ratio)
+        wandImage.crop(0,0,mirror_size,wandImage.height)
+        new_image = wImage(width=mirror_size*2, height=wandImage.size[1])
+        new_image.depth = 16
+        new_image.composite(wandImage, left=0, top=0)
+        wandImage.flop()
+        new_image.composite(wandImage, left=mirror_size, top=0)
+        new_image.save(filename='outtest.tif')
+        print "...save done."        
 
 def main():
 
@@ -276,7 +297,7 @@ def main():
             elif event.type == KEYDOWN and event.key == K_TAB:
                 show_info = show_info == False
             elif event.type == KEYDOWN and event.key == K_s:
-                bild.save()
+                bild.wand_save()
 
         bild.update()
 
