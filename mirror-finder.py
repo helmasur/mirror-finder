@@ -10,8 +10,9 @@ from PIL import Image
 #import numpy
 import glob
 #from operator import mul, add
-from wand.image import Image as wImage
+#from wand.image import Image as wImage
 import pickle
+from smc.freeimage import Image as smcImage
 
 #TODO
 #cms https://pypi.python.org/pypi/smc.freeimage
@@ -23,7 +24,8 @@ main_dir = os.path.split(os.path.abspath(__file__))[0]
 data_dir = os.path.join(main_dir, 'data')
 img_dir = "d:/_gruvan_sat/jpg"
 out_dir = "d:/_gruvan_out"
-files = glob.glob(os.path.join(img_dir, '*.jpg'))
+out_dir = "out"
+files = glob.glob(os.path.join(data_dir, '*.jpg'))
 fileNr = -1
 statusString = ''
 
@@ -49,7 +51,7 @@ def load_image(number):
     except pygame.error:
         print ('Cannot load image:', fullpath)
         raise SystemExit(str(geterror()))
-    image = image.convert()
+    image = image.convert(32,HWSURFACE)
     return image
 
 def load_next_image(isNext):
@@ -68,7 +70,7 @@ def load_next_image(isNext):
     except pygame.error:
         print ('Cannot load image:', fullpath)
         raise SystemExit(str(geterror()))
-    image = image.convert()
+    image = image.convert(32,HWSURFACE)
     return image
 
 def save_image(surface, filename):
@@ -140,12 +142,12 @@ class Bild(pygame.sprite.Sprite):
         #scale non rotated
         width = int(self.normScale * self.rectOriginal.width)
         height = int(self.normScale * self.rectOriginal.height)
-        self.image = pygame.Surface((width,height),0,self.original)
+        self.image = pygame.Surface((width,height),HWSURFACE,self.original)
         pygame.transform.smoothscale(self.original, (width, height), self.image)
         #scale and rotate
         width = int(self.rotScale * self.rectOriginal.width)
         height = int(self.rotScale * self.rectOriginal.height)
-        self.imageRot = pygame.Surface((width,height),0,self.original)
+        self.imageRot = pygame.Surface((width,height),HWSURFACE,self.original)
         pygame.transform.smoothscale(self.original, (width, height), self.imageRot)
         self.imageRot = pygame.transform.rotate(self.imageRot, 270)
         #make greyscale versions
@@ -254,7 +256,6 @@ class Bild(pygame.sprite.Sprite):
     def wand_save(self):
         global statusString
         pos = self.mouse_pos_ratio
-
         wandImage = wImage(filename=files[fileNr])
         depth = wandImage.depth
         if self.isGrey: wandImage.type = 'grayscale'
@@ -276,6 +277,32 @@ class Bild(pygame.sprite.Sprite):
         filepath = os.path.join(out_dir, filename)
         new_image.save(filename=filepath)
         statusString = 'Saved: '+filename
+
+    def smc_save(self):
+        global statusString
+        pos = self.mouse_pos_ratio
+        image = smcImage(files[fileNr])
+        if self.isGrey: image = image.greyscale()
+        if self.rot90: image = image.rotate(90)
+        if self.hFlip: image = image.flipHorizontal()
+        if self.vFlip: image = image.flipVertical()
+        mirror_size = int(image.size[0] * pos)
+        image = image.crop(0,0,mirror_size,image.height)
+        new_image = image.clone()
+        new_image = new_image.resize(mirror_size*2-1, image.size[1])
+        new_image.paste(image, 0, 0)
+        image = image.crop(0,0,mirror_size-1,image.height)  #-1 to avoid double center column
+        image = image.flipHorizontal()
+        new_image.paste(image, mirror_size, 0)
+        filename = os.path.basename(files[fileNr])
+        filename_root = os.path.splitext(filename)[0]
+        filename_ext = os.path.splitext(filename)[1]
+        filename = filename_root+self.rotateString+self.mirrorString+self.flipString+self.greyString+'_'+str(mirror_size)+filename_ext
+        filepath = os.path.join(out_dir, filename)
+        new_image.save(filepath)
+        statusString = 'Saved: '+filename
+
+
 
 def main():
 
@@ -347,7 +374,7 @@ def main():
             elif event.type == KEYDOWN and (event.key == K_s or event.key == K_RETURN):
                 statusString = 'Saving...'
                 show_status = True
-                bild.wand_save()
+                bild.smc_save()
             elif event.type == KEYDOWN and event.key == K_SPACE:
                 bild.toggle('fit')
             elif event.type == MOUSEBUTTONDOWN and event.button == 4:
