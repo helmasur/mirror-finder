@@ -1,32 +1,12 @@
-﻿# coding: utf-8
-import os, pygame
-import sys
-#import time
+﻿import os, pygame, sys, glob, pickle
 from pygame.locals import *
-#import random
-#import math
-#import colorsys
 from PIL import Image
-#import numpy
-import glob
-#from operator import mul, add
-#from wand.image import Image as wImage
-import pickle
 from smc.freeimage import Image as smcImage
-
-#TODO
-#rotation
-#search for file to open
-#saturation*L
-#error management of load non existing state
-
-
 
 main_dir = os.path.split(os.path.abspath(__file__))[0]
 data_dir = os.path.join(main_dir, 'data')
 img_dir = "d:/_berg1saturize"
 out_dir = "d:/_berg1mirrors"
-#out_dir = "out"
 files = glob.glob(os.path.join(img_dir, '*.jpg'))
 files.insert(0, os.path.join(data_dir, '01test.jpg')) #inserts a test image/splash at the beginning of file list, allows quick startup and never empty filelist
 current_file = -1
@@ -62,34 +42,6 @@ def load_state(filename):
         statusString = 'No such file yet.'
         raise SystemExit(str(geterror()))
 
-# def load_image(number):
-#     try:
-#         image = pygame.image.load(files[number])
-#     except pygame.error:
-#         print ('Cannot load image:', fullpath)
-#         raise SystemExit(str(geterror()))
-#     image = image.convert(32,HWSURFACE)
-#     return image
-
-# def load_next_image(isNext):
-#     #change the index of the file to load
-#     global current_file
-#     if current_file == -1: current_file=0
-#     elif isNext: #next file
-#         if current_file+1 < len(files): current_file+=1
-#         else: current_file=0
-#     else: #previous file
-#         if current_file > 0: current_file-=1
-#         else: current_file = len(files)-1
-
-#     try:
-#         image = pygame.image.load(files[current_file])
-#     except pygame.error:
-#         print ('Cannot load image:', fullpath)
-#         raise SystemExit(str(geterror()))
-#     image = image.convert(32,HWSURFACE)
-#     return image
-
 def save_image(surface, filename):
     fullpath = os.path.join(data_dir, filename)
     pygame.image.save(surface, fullpath)
@@ -116,7 +68,7 @@ def smc_to_surface(image):
 
 class Bild(pygame.sprite.Sprite):
     def __init__(self):
-        pygame.sprite.Sprite.__init__(self) #call Sprite initializer
+        pygame.sprite.Sprite.__init__(self)
         
         self.load('first')  #load file
 
@@ -182,7 +134,7 @@ class Bild(pygame.sprite.Sprite):
         self.imageForHeightRotated = pygame.Surface.convert_alpha(self.imageForHeightRotated)
 
     def resize(self):   #create images fitting the current resolution
-        print "INTO RESIZE"
+        print("INTO RESIZE")
 
     def remake(self):
         self.rotate()
@@ -208,19 +160,18 @@ class Bild(pygame.sprite.Sprite):
             self.rotationAdjustment -= 5
             self.totalRotation -= 5
         if item == 'rot90':
-            self.rot90 = self.rot90 == False            #ändra boolvärdet
+            self.rot90 = self.rot90 == False
             if self.rot90: self.totalRotation = self.rotationAdjustment + 90
             else: self.totalRotation = self.rotationAdjustment
         elif item == 'hFlip':
-            self.hFlip = self.hFlip == False            #ändra boolvärdet
+            self.hFlip = self.hFlip == False
         elif item == 'vFlip':
-            self.vFlip = self.vFlip == False            #ändra boolvärdet
+            self.vFlip = self.vFlip == False
         elif item == 'fit':
             self.fitHeightOnly = self.fitHeightOnly == False
         self.remake()
 
     def update_rects(self):
-        #get rects
         self.Lrect = self.Limage.get_rect()
         self.Rrect = self.Rimage.get_rect()
         self.Lcrop = self.Lrect.copy()
@@ -230,7 +181,7 @@ class Bild(pygame.sprite.Sprite):
         if self.rot90:
             if self.fitHeightOnly: self.Limage = self.imageForHeightRotated
             else: self.Limage = self.imageForViewRotated
-        else: #not rotated
+        else:
             if self.fitHeightOnly: self.Limage = self.imageForHeight
             else: self.Limage = self.imageForView
 
@@ -245,12 +196,9 @@ class Bild(pygame.sprite.Sprite):
 
     def update(self):
         mouse = pygame.mouse.get_pos()
-        #mouse = mouse[0]+1 #the first column of pixels is 1 in relation to width of screen
         mouse = max(mouse[0]-10, 0) #move active area 10px to the right and limit to min 0
         mouse = min(1.0 * mouse / (self.disprect.width-20), 1) #crop active area 10px right and limit to 1
         self.mouse_pos_ratio = mouse
-        #self.mouse_pos_ratio = 1.0 * (mouse[0]+1) / self.disprect.width #used for save
-        #self.croppos = min((mouse[0]+1)/2, self.Lrect.width) #since tall images might not fill the width
         self.croppos = min(int(mouse*self.Lrect.width), self.Lrect.width) #since tall images might not fill the width
 
         self.Lrect.left = self.disprect.centerx - self.croppos
@@ -397,10 +345,7 @@ def main():
                 statusString = 'Loaded saved state.'
                 show_status = True
             elif event.type == KEYDOWN:
-                print event.key
-
-
-
+                print(event.key)
 
         bild.update()
 
