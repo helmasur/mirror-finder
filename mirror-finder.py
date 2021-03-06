@@ -1,14 +1,25 @@
 ﻿import os, pygame, sys, glob, pickle
 from pygame.locals import *
 from PIL import Image
-from smc.freeimage import Image as smcImage
+# from smc.freeimage import Image as smcImage
+import cv2
 
-main_dir = os.path.split(os.path.abspath(__file__))[0]
+
+import os
+os.mkdir("test")
+os.chdir("test")
+print(os.getcwd())
+os.chdir("..")
+print(os.getcwd())
+os.rmdir("test")
+
+main_dir = os.getcwd()
 data_dir = os.path.join(main_dir, 'data')
-img_dir = "d:/_berg1saturize"
-out_dir = "d:/_berg1mirrors"
+img_dir = os.path.join(main_dir, 'input')
+out_dir = os.path.join(main_dir, 'output')
+
 files = glob.glob(os.path.join(img_dir, '*.jpg'))
-files.insert(0, os.path.join(data_dir, '01test.jpg')) #inserts a test image/splash at the beginning of file list, allows quick startup and never empty filelist
+# files.insert(0, os.path.join(data_dir, '01test.jpg')) #inserts a test image/splash at the beginning of file list, allows quick startup and never empty filelist
 current_file = -1
 statusString = ''
 
@@ -56,7 +67,7 @@ def surf_grey(surface):
     surface = pygame.image.fromstring(image_string, rect.size, 'RGB', False)
     return surface
 
-def smc_to_surface(image):
+""" def smc_to_surface(image):
     size = image.size
     mode = image.color_type_name
     image = image.toPIL()
@@ -64,7 +75,7 @@ def smc_to_surface(image):
         image = image.convert('RGB')
     image = image.tostring()
     image = pygame.image.fromstring(image, size, 'RGB', False)
-    return image
+    return image """
 
 class Bild(pygame.sprite.Sprite):
     def __init__(self):
@@ -83,8 +94,9 @@ class Bild(pygame.sprite.Sprite):
         self.rotationAdjustment = 0        
         global statusString
         statusString = ''
-        self.original = smcImage(get_file_path(position))
-        self.original = smc_to_surface(self.original)
+        self.original = cv2.imread(get_file_path(position))
+        self.size = (self.original.shape[1], self.original.shape[0])
+        self.original = pygame.image.frombuffer(self.original.tobytes(), self.size, 'BGR')
         self.adaptToView()
 
     def adaptToView(self):
@@ -353,8 +365,8 @@ def main():
         imageareaRect = imagearea.get_rect()
         imageareaRect.centery = pygame.display.Info().current_h / 2
         
-        screen.fill ((50, 0, 0))
-        imagearea.fill ((50, 0, 0))
+        screen.fill ((30, 30, 30))
+        imagearea.fill ((30, 30, 30))
         imagearea.blit(bild.Limage, bild.Lrect, bild.Lcrop)
         imagearea.blit(bild.Rimage, bild.Rrect, bild.Rcrop)
         screen.blit(imagearea, imageareaRect)
